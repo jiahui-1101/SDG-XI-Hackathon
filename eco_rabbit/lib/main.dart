@@ -1,122 +1,116 @@
 import 'package:flutter/material.dart';
+import 'home_screen.dart';
+//import 'map_screen.dart';
+//import 'chat_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const EcoRabbitWeb());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class EcoRabbitWeb extends StatelessWidget {
+  const EcoRabbitWeb({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'EcoRabbit Dashboard',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF5F7FA), // 浅灰背景，适合 Web
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MainDashboardScaffold(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class MainDashboardScaffold extends StatefulWidget {
+  const MainDashboardScaffold({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MainDashboardScaffold> createState() => _MainDashboardScaffoldState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _MainDashboardScaffoldState extends State<MainDashboardScaffold> {
+  int _currentIndex = 0;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  final List<Widget> _pages = [
+    const HomeScreen(),
+   // const MapScreen(),
+   // const ChatScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    // 获取屏幕宽度
+    final width = MediaQuery.of(context).size.width;
+    final isDesktop = width > 800; // 如果宽度大于 800，就认为是电脑/iPad横屏
+
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+      body: Row(
+        children: [
+          // --- Web 版专用：左侧侧边栏 ---
+          if (isDesktop)
+            NavigationRail(
+              selectedIndex: _currentIndex,
+              onDestinationSelected: (int index) {
+                setState(() => _currentIndex = index);
+              },
+              labelType: NavigationRailLabelType.all,
+              leading: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Icon(Icons.eco, color: Colors.teal, size: 40), // Logo
+              ),
+              destinations: const [
+                NavigationRailDestination(
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home),
+                  label: Text('Dashboard'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.map_outlined),
+                  selectedIcon: Icon(Icons.map),
+                  label: Text('City Layers'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.smart_toy_outlined),
+                  selectedIcon: Icon(Icons.smart_toy),
+                  label: Text('AI Agent'),
+                ),
+              ],
             ),
-          ],
-        ),
+
+          // --- 垂直分割线 (仅 Web) ---
+          if (isDesktop) const VerticalDivider(thickness: 1, width: 1),
+
+          // --- 主要内容区域 ---
+          Expanded(
+            child: Center(
+              // 限制最大宽度，防止内容在宽屏上被拉得太长
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000), 
+                child: _pages[_currentIndex],
+              ),
+            ),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+
+      // --- 手机版专用：底部导航栏 ---
+      bottomNavigationBar: isDesktop
+          ? null // 如果是电脑，就不显示底部栏
+          : NavigationBar(
+              selectedIndex: _currentIndex,
+              onDestinationSelected: (int index) {
+                setState(() => _currentIndex = index);
+              },
+              destinations: const [
+                NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
+                NavigationDestination(icon: Icon(Icons.map_outlined), label: 'Map'),
+                NavigationDestination(icon: Icon(Icons.smart_toy_outlined), label: 'AI'),
+              ],
+            ),
     );
   }
 }
