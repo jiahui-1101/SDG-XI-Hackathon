@@ -197,7 +197,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 }
 
-// ========== 2. LOADING PAGE (转圈圈) ==========
+// ========== ADD LOADING PAGE HERE ==========
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
 
@@ -205,35 +205,55 @@ class LoadingScreen extends StatefulWidget {
   State<LoadingScreen> createState() => _LoadingScreenState();
 }
 
-class _LoadingScreenState extends State<LoadingScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+class _LoadingScreenState extends State<LoadingScreen> {
+  int _carrotCount = 0;
 
   @override
   void initState() {
     super.initState();
-    
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat();
 
-    // After 3 seconds, go to main dashboard
+    // Show carrots one by one with delays
+    _showCarrotsSequentially();
+  }
+
+  void _showCarrotsSequentially() {
+    // Show first carrot after 0.5 seconds
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _carrotCount = 1;
+        });
+      }
+    });
+
+    // Show second carrot after 1 second
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) {
+        setState(() {
+          _carrotCount = 2;
+        });
+      }
+    });
+
+    // Show third carrot after 1.5 seconds
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        setState(() {
+          _carrotCount = 3;
+        });
+      }
+    });
+
+    // After 3 seconds total, go to main page
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const MainDashboardScaffold(), // 去主页
+            builder: (context) => const MainDashboardScaffold(),
           ),
         );
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   @override
@@ -259,7 +279,7 @@ class _LoadingScreenState extends State<LoadingScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Rabbit Image (Static here)
+              // Rabbit Image
               Container(
                 width: isDesktop ? 120 : 80,
                 height: isDesktop ? 120 : 80,
@@ -308,27 +328,79 @@ class _LoadingScreenState extends State<LoadingScreen>
               const SizedBox(height: 30),
 
               // Animated Circular Progress Indicator
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  return CircularProgressIndicator(
-                    value: _controller.value,
-                    backgroundColor: Colors.green[100],
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
-                    strokeWidth: 6,
-                  );
-                },
+              SizedBox(
+                width: isDesktop ? 200 : 150,
+                child: LinearProgressIndicator(
+                  backgroundColor: Colors.green[100],
+                  color: const Color(0xFF4CAF50),
+                  borderRadius: BorderRadius.circular(10),
+                  minHeight: 8,
+                ),
               ),
 
               const SizedBox(height: 20),
 
-              // Loading Message
-              Text(
-                'Analyzing transit data and housing options...',
-                style: TextStyle(
-                  fontSize: isDesktop ? 16 : 14,
-                  color: const Color(0xFF388E3C),
-                ),
+              // Loading Message with animated carrots
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Loading',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF388E3C),
+                    ),
+                  ),
+                  Text(
+                    '.', // First dot
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: const Color(0xFF388E3C),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '.', // Second dot
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: const Color(0xFF388E3C),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '.', // Third dot
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: const Color(0xFF388E3C),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  // Carrots that appear one by one
+                  if (_carrotCount >= 1)
+                    Text(
+                      ' 🥕',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: const Color(0xFF388E3C),
+                      ),
+                    ),
+                  if (_carrotCount >= 2)
+                    Text(
+                      '🥕',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: const Color(0xFF388E3C),
+                      ),
+                    ),
+                  if (_carrotCount >= 3)
+                    Text(
+                      '🥕',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: const Color(0xFF388E3C),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),

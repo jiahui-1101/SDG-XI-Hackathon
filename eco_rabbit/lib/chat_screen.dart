@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  // ✅ 接收从 Home 传来的上下文 (可选)
+  final Map<String, dynamic>? initialContext;
+
+  const ChatScreen({super.key, this.initialContext});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -12,24 +15,46 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  // 初始 AI 文案
-  static const String _initialAiText =
+  // 通用开场白 (Tab 3 模式)
+  static const String _genericWelcome =
       "Hi Alex! 👋 我是你的 EcoHabit 房产顾问。\n\n"
-      "我已经结合 GTFS 交通数据 和 房租趋势 分析了你的情况。\n\n"
-      "你可以直接点击下方按钮，或问我任何问题。";
+      "你可以问我关于 KL 任何区域的 **交通预测**、**租金趋势** 或 **宜居程度**。\n\n"
+      "试试问：\n"
+      "• Compare Cheras and Setapak\n"
+      "• 5-year rental growth";
 
-  /// 消息结构：
-  /// { 
-  ///   "isUser": bool, 
-  ///   "text": String, 
-  ///   "chartData": List<double>?, 
-  ///   "propertyCard": Map<String, dynamic>?  <-- 新增这个字段
-  /// }
-  final List<Map<String, dynamic>> _messages = [
-    {"isUser": false, "text": _initialAiText}
-  ];
+  // 聊天记录列表
+  final List<Map<String, dynamic>> _messages = [];
 
   bool _isTyping = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ 初始化：判断是“通用模式”还是“房源分析模式”
+    _initConversation();
+  }
+
+  void _initConversation() {
+    String welcomeText;
+
+    if (widget.initialContext != null) {
+      // 模式 B: 从 Home 卡片进来 (有 Context)
+      final ctx = widget.initialContext!;
+      welcomeText = 
+          "Hi! 我看到你对 **${ctx['title']}** 感兴趣。🏡\n\n"
+          "已知你的工作地点在 **${ctx['workplace']}**，预算约 **${ctx['budget']}**。\n\n"
+          "关于这个房源，你可以问我：\n"
+          "1. 它的真实通勤时间 (Commute Reality)？\n"
+          "2. 这里的未来租金预测？\n"
+          "3. 相比 Setapak 这里的优势？";
+    } else {
+      // 模式 A: 从底部导航栏进来 (通用)
+      welcomeText = _genericWelcome;
+    }
+
+    _messages.add({"isUser": false, "text": welcomeText});
+  }
 
   @override
   void dispose() {
@@ -56,7 +81,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = preset ?? _controller.text.trim();
     if (text.isEmpty) return;
 
-    // 1. 用户消息
+    // 1. 用户消息上屏
     setState(() {
       _messages.add({"isUser": true, "text": text});
       _isTyping = true;
@@ -64,106 +89,147 @@ class _ChatScreenState extends State<ChatScreen> {
     _controller.clear();
     _scrollToBottom();
 
-    // 2. 模拟 AI 思考
+    // 2. 模拟 AI 思考延迟
     await Future.delayed(const Duration(seconds: 2));
 
     final input = text.toLowerCase();
+    
+    // --- 智能逻辑路由 ---
 
-    // ====== 场景 A：图表 (5 Year Growth) ======
-    final bool askRentalGrowth = (
-      (input.contains("5 years") || input.contains("5-year") || input.contains("5 year") || input.contains("5年")) &&
-      (input.contains("rent") || input.contains("rental") || input.contains("rental fee") || input.contains("租金"))
-    );
-
-    if (askRentalGrowth) {
-      const baseRent = 1300.0;
-      const growthRate = 0.04;
-      final List<double> projected = List.generate(
-        5,
-        (i) => baseRent * math.pow(1 + growthRate, i).toDouble(),
-      );
-
-      const explanation = "📈 这是基于 Demo 数据的未来 5 年租金增长预测（以 Cheras 为例）：\n\n"
-          "假设每年约 4% 增长，现在签长约会更划算。";
-
-      if (!mounted) return;
-      setState(() {
-        _isTyping = false;
-        _messages.add({"isUser": false, "text": explanation});
-        _messages.add({
-          "isUser": false,
-          "text": "未来 5 年租金预测",
-          "chartData": projected,
-        });
-      });
-      _scrollToBottom();
+    // A. 租金增长图表 (Chart)
+    if (input.contains("5 years") || input.contains("growth") || input.contains("rental") || input.contains("租金")) {
+      _addChartResponse();
       return;
     }
 
-    // ====== 场景 B：房源推荐 (Cheras) -> 触发卡片! ======
-    if (input.contains("cheras") || input.contains("推荐") || input.contains("recommend")) {
-      const aiResponse =
+    // B. 针对 Context 的特定回答 (如果从 Home 进来)
+    if (widget.initialContext != null && (input.contains("commute") || input.contains("time") || input.contains("通勤"))) {
+       final workplace = widget.initialContext!['workplace'];
+       final title = widget.initialContext!['title'];
+       _addTextResponse(
+           "根据 GTFS 实时数据，从 **$title** 到 **$workplace**：\n\n"
+           "🟢 **MRT:** 35 分钟 (准时)\n"
+           "🔴 **开车:** 早高峰需 1小时 10分钟 (高拥堵)\n\n"
+           "建议：选择公共交通，每天可节省 35 分钟。"
+       );
+       return;
+    } 
+
+    // C. 通用回答 (Keyword Based)
+    if (input.contains("cheras") || input.contains("why") || input.contains("推荐")) {
+      // 触发推荐卡片
+      _addPropertyRecommendation();
+      return;
+    } 
+    
+    if (input.contains("setapak") || input.contains("traffic") || input.contains("堵车")) {
+      _addTextResponse(
+          "⚠️ **高拥堵风险 (High Traffic Stress)**\n\n"
+          "Setapak 区域在 7:30 AM 的拥堵指数高达 9/10。\n"
+          "🔴 Jalan Genting Klang 平均车速仅 15km/h。\n\n"
+          "除非你居家办公，否则建议避开。"
+      );
+      return;
+    }
+
+    if (input.contains("price") || input.contains("cheap") || input.contains("便宜")) {
+      _addTextResponse(
+          "💰 **价格 vs 价值分析**\n\n"
+          "Setapak 看起来更便宜 (RM1100)，但存在大量隐形成本：\n"
+          "❌ Setapak: 房租 1100 + 养车 ~600 ≈ RM 1700+\n"
+          "✅ Cheras: 房租 1300 + MRT ~50 ≈ RM 1350\n\n"
+          "EcoHabit 帮你算的是**综合生活成本**。"
+      );
+      return;
+    }
+
+    // D. 默认回复
+    _addTextResponse(
+      "收到！正在调用 Gemini API 分析该区域的 Urban Density 和 Traffic Flow...\n\n"
+      "(Demo 提示: 试试问 'Why Cheras' 或 '5 years growth')"
+    );
+  }
+
+  void _addTextResponse(String text) {
+    if (!mounted) return;
+    setState(() {
+      _isTyping = false;
+      _messages.add({"isUser": false, "text": text});
+    });
+    _scrollToBottom();
+  }
+
+  void _addChartResponse() {
+    const baseRent = 1300.0;
+    const growthRate = 0.04;
+    final List<double> projected = List.generate(
+        5, (i) => baseRent * math.pow(1 + growthRate, i).toDouble());
+
+    const explanation = "📈 基于 Demo 数据的未来 5 年租金增长预测：\n"
+        "假设每年约 4% 增长，该区域资产增值潜力巨大。";
+
+    if (!mounted) return;
+    setState(() {
+      _isTyping = false;
+      _messages.add({"isUser": false, "text": explanation});
+      _messages.add({
+        "isUser": false,
+        "text": "未来 5 年租金预测",
+        "chartData": projected,
+      });
+    });
+    _scrollToBottom();
+  }
+
+  void _addPropertyRecommendation() {
+    const aiResponse =
           "根据模型分析，我强烈推荐 **Cheras** 🌟。\n\n"
           "📊 **关键数据对比：**\n"
           "• Last-Mile：步行 400m 即达 MRT，完美避开拥堵。\n"
           "• 早高峰车速预估比 Setapak 快 45%。\n\n"
           "👇 **我为你锁定了这个高匹配度房源：**";
 
-      // 模拟房源数据
-      final propertyData = {
-        "title": "Cheras Green Condo",
-        "price": "RM 1,300",
-        "image": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
-        "score": 92,
-        "location": "Cheras, KL"
-      };
-
-      if (!mounted) return;
-      setState(() {
-        _isTyping = false;
-        _messages.add({
-          "isUser": false,
-          "text": aiResponse,
-          "propertyCard": propertyData, // 这里的 propertyCard 触发卡片渲染
-        });
-      });
-      _scrollToBottom();
-      return;
-    }
-
-    // ====== 场景 C：普通文本回复 (Setapak / Price / Default) ======
-    String aiResponse;
-    if (input.contains("setapak") || input.contains("traffic") || input.contains("堵车")) {
-      aiResponse =
-          "⚠️ **高拥堵风险 (High Traffic Stress)**\n\n"
-          "Setapak 虽然房租便宜 (RM1100)，但根据 Kaggle GTFS 数据，\n"
-          "该区域在 7:30 AM 的拥堵指数高达 9/10。\n\n"
-          "🔴 **痛点：** Jalan Genting Klang 平均车速仅 15km/h，每天多花 50分钟通勤。";
-    } else if (input.contains("price") || input.contains("cheap") || input.contains("便宜")) {
-      aiResponse =
-          "💰 **价格 vs 价值分析**\n\n"
-          "Setapak 看起来更便宜 (RM1100)，但存在大量隐形成本：\n"
-          "❌ Setapak: 房租 1100 + 养车 ~600 ≈ RM 1700+\n"
-          "✅ Cheras: 房租 1300 + MRT ~50 ≈ RM 1350\n\n"
-          "EcoHabit 帮你算的是**综合生活成本**。";
-    } else {
-      aiResponse =
-          "收到！正在分析该区域的 Urban Density 和 Traffic Flow...\n\n"
-          "(Demo: 试试问 'Why Cheras' 来看**房源推荐卡片**，或问 '5 years rental growth' 看**图表**)";
-    }
+    // 模拟房源数据
+    final propertyData = {
+      "title": "Cheras Green Condo",
+      "price": "RM 1,300",
+      "image": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+      "score": 92,
+      "location": "Cheras, KL"
+    };
 
     if (!mounted) return;
     setState(() {
       _isTyping = false;
-      _messages.add({"isUser": false, "text": aiResponse});
+      _messages.add({
+        "isUser": false,
+        "text": aiResponse,
+        "propertyCard": propertyData,
+      });
     });
     _scrollToBottom();
   }
 
   @override
   Widget build(BuildContext context) {
+    // 只有从 Home 跳转过来才显示 AppBar 返回键
+    final bool showBackButton = widget.initialContext != null;
+
     return Scaffold(
       backgroundColor: const Color(0xFFEFF3F6),
+      appBar: showBackButton 
+        ? AppBar(
+            title: const Text("AI Insight", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+            backgroundColor: Colors.white,
+            elevation: 1,
+            iconTheme: const IconThemeData(color: Colors.black),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
+          )
+        : null,
+      
       body: Stack(
         children: [
           Positioned(
@@ -176,9 +242,19 @@ class _ChatScreenState extends State<ChatScreen> {
                 constraints: const BoxConstraints(maxWidth: 900),
                 child: Column(
                   children: [
-                    _buildModernHeader(),
+                    // 只有 Tab 模式才显示那个漂亮的 Header
+                    if (!showBackButton) _buildModernHeader(),
+                    
                     const SizedBox(height: 8),
-                    _buildScenarioCard(),
+                    
+                    // ✅ 如果有 Context，显示房源信息 Chip
+                    if (widget.initialContext != null) 
+                      _buildContextInfoCard(widget.initialContext!),
+                    
+                    // ✅ 如果没有 Context，显示通用 Chips
+                    if (widget.initialContext == null)
+                      _buildScenarioCard(),
+
                     const SizedBox(height: 8),
                     Expanded(
                       child: Column(
@@ -196,7 +272,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 final isUser = msg["isUser"] as bool? ?? false;
                                 final text = msg["text"] as String? ?? "";
 
-                                // 1. 渲染图表气泡
+                                // 渲染图表
                                 if (msg["chartData"] != null) {
                                   return _buildChartBubble(
                                     text: text,
@@ -204,20 +280,18 @@ class _ChatScreenState extends State<ChatScreen> {
                                   );
                                 }
 
-                                // 2. 渲染房源推荐卡片 (新功能) 🚀
+                                // 渲染卡片
                                 if (msg["propertyCard"] != null) {
                                   return Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      // 先显示文字气泡
                                       _buildMessageBubble(isUser: isUser, text: text),
-                                      // 再显示卡片
                                       _buildPropertyCardBubble(msg["propertyCard"]),
                                     ],
                                   );
                                 }
 
-                                // 3. 普通文字气泡
+                                // 渲染普通文字
                                 return _buildMessageBubble(isUser: isUser, text: text);
                               },
                             ),
@@ -236,29 +310,45 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // --- 🔥 新增组件：房源推荐卡片 ---
+  // --- Widget: 显示当前讨论房源 ---
+  Widget _buildContextInfoCard(Map<String, dynamic> ctx) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.teal.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.teal.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.home, size: 16, color: Colors.teal),
+          const SizedBox(width: 8),
+          Text("Discussing: ${ctx['title']}", style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  // --- Widget: 房源推荐卡片 ---
   Widget _buildPropertyCardBubble(Map<String, dynamic> data) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 15, left: 4, right: 20),
-        width: 280, // 卡片固定宽度
+        width: 280,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.teal.withOpacity(0.15)),
           boxShadow: [
-            BoxShadow(
-              color: Colors.teal.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 6)
-            )
+            BoxShadow(color: Colors.teal.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 6))
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 房源图片
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
               child: Image.network(
@@ -266,11 +356,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 height: 140,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (ctx, _, __) => Container( // 图片加载失败时的占位
-                  height: 140,
-                  color: Colors.grey[200],
-                  child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey)),
-                ),
+                errorBuilder: (ctx, _, __) => Container(height: 140, color: Colors.grey[200], child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey))),
               ),
             ),
             Padding(
@@ -288,7 +374,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  // Eco Score 标签
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(6)),
@@ -302,15 +387,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // 按钮
                   SizedBox(
                     width: double.infinity,
-                    height: 38,
+                    height: 36,
                     child: ElevatedButton(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Navigating to Map Details..."))
-                        );
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Navigating to Map Details...")));
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal,
@@ -330,7 +412,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // --- 原有 UI 组件 ---
+  // --- Widget: Header ---
   Widget _buildModernHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
@@ -357,13 +439,14 @@ class _ChatScreenState extends State<ChatScreen> {
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.grey),
-            onPressed: () => setState(() { _messages.clear(); _messages.add({"isUser": false, "text": _initialAiText}); _isTyping = false; }),
+            onPressed: () => setState(() { _messages.clear(); _initConversation(); _isTyping = false; }),
           ),
         ],
       ),
     );
   }
 
+  // --- Widget: Scenario Chips ---
   Widget _buildScenarioCard() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -383,6 +466,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  // --- Widget: Input Container ---
   Widget _buildInputContainer() {
     return Container(
       decoration: BoxDecoration(
@@ -401,6 +485,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  // --- Widget: Suggestion Chips ---
   Widget _buildSuggestionChips() {
     final suggestions = ["⚔️ Cheras vs Setapak", "📈 5-year rental growth"];
     return SingleChildScrollView(
@@ -418,6 +503,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  // --- Widget: Input Area ---
   Widget _buildInputArea() {
     return Row(children: [
       Expanded(
@@ -440,6 +526,7 @@ class _ChatScreenState extends State<ChatScreen> {
     ]);
   }
 
+  // --- Widget: Text Bubble ---
   Widget _buildMessageBubble({required bool isUser, required String text}) {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -475,6 +562,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  // --- Widget: Chart Bubble ---
   Widget _buildChartBubble({required String text, required List<double> data}) {
     final maxValue = data.isEmpty ? 0.0 : data.reduce(math.max);
     return Align(
@@ -520,6 +608,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  // --- Widget: Typing Indicator ---
   Widget _buildTypingIndicator() {
     return Align(
       alignment: Alignment.centerLeft,
@@ -537,6 +626,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
+// --- Widget: Simple Scenario Chip ---
 class _ScenarioChip extends StatelessWidget {
   final IconData icon;
   final String label;
