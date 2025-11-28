@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'map_screen.dart';
 import 'chat_screen.dart';
+import 'result_display_screen.dart';
+import 'information_house_screen.dart';
 
 void main() {
   runApp(const EcoRabbitWeb());
