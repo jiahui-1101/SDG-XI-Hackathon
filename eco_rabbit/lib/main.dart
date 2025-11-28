@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'home_screen.dart';
 import 'map_screen.dart';
 import 'chat_screen.dart';
@@ -168,7 +169,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         children: [
                           Text(
                             'EcoRabbit',
-                            style: TextStyle(
+                          style: GoogleFonts.caveat(
                               fontSize: isDesktop ? 56 : 36,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF2E7D32),
@@ -177,7 +178,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           const SizedBox(height: 8),
                           Text(
                             'AI-Driven Smart Living Assistant',
-                            style: TextStyle(
+                           style: GoogleFonts.caveat(
                               fontSize: isDesktop ? 20 : 16,
                               color: const Color(0xFF388E3C),
                               fontWeight: FontWeight.w500,
@@ -317,7 +318,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
               // Loading Text
               Text(
                 'Preparing Your EcoRabbit Experience',
-                style: TextStyle(
+                style: GoogleFonts.caveat(
                   fontSize: isDesktop ? 28 : 20,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF2E7D32),
@@ -344,7 +345,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                 Text(
                     'Loading',
                     style: TextStyle(
                       fontSize: 16,
@@ -353,7 +354,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                   ),
                   Text(
                     '.', // First dot
-                    style: TextStyle(
+                   style: GoogleFonts.caveat(
                       fontSize: 16,
                       color: const Color(0xFF388E3C),
                       fontWeight: FontWeight.bold,
@@ -361,7 +362,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                   ),
                   Text(
                     '.', // Second dot
-                    style: TextStyle(
+                    style: GoogleFonts.caveat(
                       fontSize: 16,
                       color: const Color(0xFF388E3C),
                       fontWeight: FontWeight.bold,
@@ -369,7 +370,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                   ),
                   Text(
                     '.', // Third dot
-                    style: TextStyle(
+                   style: GoogleFonts.caveat(
                       fontSize: 16,
                       color: const Color(0xFF388E3C),
                       fontWeight: FontWeight.bold,
@@ -379,7 +380,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                   if (_carrotCount >= 1)
                     Text(
                       ' 🥕',
-                      style: TextStyle(
+                    style: GoogleFonts.caveat(
                         fontSize: 16,
                         color: const Color(0xFF388E3C),
                       ),
@@ -387,7 +388,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                   if (_carrotCount >= 2)
                     Text(
                       '🥕',
-                      style: TextStyle(
+                      style: GoogleFonts.caveat(
                         fontSize: 16,
                         color: const Color(0xFF388E3C),
                       ),
@@ -395,7 +396,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                   if (_carrotCount >= 3)
                     Text(
                       '🥕',
-                      style: TextStyle(
+                      style: GoogleFonts.caveat(
                         fontSize: 16,
                         color: const Color(0xFF388E3C),
                       ),
