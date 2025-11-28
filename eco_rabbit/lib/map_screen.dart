@@ -262,7 +262,105 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       body: Column(
         children: [
-          // Search Bar
+          // 标题部分 - 放在最上面
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 15, 20, 15),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color.fromARGB(255, 255, 255, 255),
+                  const Color.fromARGB(255, 248, 248, 248),
+                  const Color.fromARGB(255, 255, 255, 255),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // 兔子照片
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color.fromARGB(255, 255, 255, 255),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color.fromARGB(255, 251, 250, 250).withOpacity(0.3),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/rabbit_look.png', // 请确保这个路径正确
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        // 如果图片加载失败，显示一个可爱的兔子图标
+                        return Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color.fromARGB(255, 252, 252, 252),
+                          ),
+                          child: const Icon(
+                            Icons.pets,
+                            color: Colors.pink,
+                            size: 30,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _layerData[_selectedLayer]['name'],
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromARGB(255, 0, 0, 0),
+                          shadows: [
+                            Shadow(
+                              blurRadius: 2,
+                              color: Colors.white,
+                              offset: Offset(1, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _layerData[_selectedLayer]['description'],
+                        style: TextStyle(
+                          color: const Color.fromARGB(255, 39, 39, 39),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Search Bar - 现在放在标题下面
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
@@ -371,104 +469,6 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
 
-          // 改进的标题部分 - 去掉白格，添加渐变背景和兔子照片
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 15, 20, 15),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color.fromARGB(255, 255, 255, 255),
-                  const Color.fromARGB(255, 248, 248, 248),
-                  const Color.fromARGB(255, 255, 255, 255),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // 兔子照片
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color.fromARGB(255, 255, 255, 255),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color.fromARGB(255, 251, 250, 250).withOpacity(0.3),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/rabbit_look.png', // 请确保这个路径正确
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        // 如果图片加载失败，显示一个可爱的兔子图标
-                        return Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color.fromARGB(255, 252, 252, 252),
-                          ),
-                          child: const Icon(
-                            Icons.pets,
-                            color: Colors.pink,
-                            size: 30,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _layerData[_selectedLayer]['name'],
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromARGB(255, 0, 0, 0),
-                          shadows: [
-                            Shadow(
-                              blurRadius: 2,
-                              color: Colors.white,
-                              offset: Offset(1, 1),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _layerData[_selectedLayer]['description'],
-                        style: TextStyle(
-                          color: const Color.fromARGB(255, 39, 39, 39),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
           // Map Area
           Expanded(
             child: Stack(
@@ -552,6 +552,23 @@ class _MapScreenState extends State<MapScreen> {
                   );
                 }).toList(),
 
+                // Google Maps 风格的控制按钮
+                Positioned(
+                  top: 20,
+                  right: 20,
+                  child: Column(
+                    children: [
+                      // 缩放按钮
+                      _buildMapControlButton(Icons.add, () {}),
+                      const SizedBox(height: 8),
+                      _buildMapControlButton(Icons.remove, () {}),
+                      const SizedBox(height: 16),
+                      // 定位按钮
+                      _buildMapControlButton(Icons.my_location, () {}),
+                    ],
+                  ),
+                ),
+
                 // Distance Indicator for Search Results
                 if (_highlightedAreas.isNotEmpty)
                   Positioned(
@@ -597,7 +614,7 @@ class _MapScreenState extends State<MapScreen> {
                 if (_showLegend)
                   Positioned(
                     top: 20,
-                    right: 20,
+                    left: 20,
                     child: _buildLegend(),
                   ),
 
@@ -662,7 +679,31 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  // 构建滑块UI
+  // Google Maps 风格的控制按钮
+  Widget _buildMapControlButton(IconData icon, VoidCallback onPressed) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: IconButton(
+        icon: Icon(icon, size: 20),
+        onPressed: onPressed,
+        color: Colors.grey[700],
+      ),
+    );
+  }
+
+  // 以下所有现有方法保持不变...
   Widget _buildVibeSlider() {
     String leftLabel;
     String rightLabel;
