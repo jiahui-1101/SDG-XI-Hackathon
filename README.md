@@ -1,10 +1,10 @@
-# 🌿 EcoHabit — AI Housing Assistant for Sustainable Cities
+# 🌿 EcoRabbit — AI Housing Assistant for Sustainable Cities
 ### Fixing Traffic by Moving People, Not Cars
 
 ## 📌 Overview
 EcoHabit is an AI-driven housing assistant that helps young professionals find Transit-Oriented housing by optimizing Affordability, Public Transport Connectivity, and Traffic Prediction. Instead of searching for a home by district, EcoHabit begins with your workplace and commute patterns to reduce long-term car dependency—directly supporting SDG 11: Sustainable Cities & Communities.
 
-## 🧩 Why EcoHabit Exists
+## 🧩 Why EcoRabbit Exists
 ### Spatial Mismatch: The Real Cause of Traffic
 Low-income and young professionals (B40/M40) often cannot afford homes near city centers. They are pushed to disconnected suburbs and forced to drive, causing:
 - Daily traffic congestion  
@@ -28,7 +28,7 @@ Listings include driving vs. transit time, cost, and carbon impact comparison.
 **Traffic Stress Map:** Predicted congestion zones from GTFS data
 **Affordability Map:** Highlights expensive vs. affordable regions
 
-### ✅ 3. EcoHabit Insight Agent (AI Assistant)
+### ✅ 3. EcoRabbit Insight Agent (AI Assistant)
 Powered by Google Gemini API.  
 Provides personalized urban mobility recommendations based on:
 - Property data  
