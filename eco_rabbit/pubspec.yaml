@@ -5,15 +5,16 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.10.0-139.0.dev
+    sdk: '>=3.2.0 <4.0.0'  
 
 dependencies:
   flutter:
-    sdk: flutter
+    sdk: flutter 
 
   cupertino_icons: ^1.0.8
   
   google_fonts: ^6.1.0
+  google_generative_ai: 0.4.7
 
 dev_dependencies:
   flutter_test:

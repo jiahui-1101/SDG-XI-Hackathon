@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'secrets.dart';
 
 class ChatScreen extends StatefulWidget {
-  // ✅ 接收从 Home 传来的上下文 (可选)
+  // 接收从 Home 传来的上下文 (可选)
   final Map<String, dynamic>? initialContext;
 
   const ChatScreen({super.key, this.initialContext});
@@ -15,45 +17,88 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  // 通用开场白 (Tab 3 模式)
-  static const String _genericWelcome =
-      "Hi Alex! 👋 我是你的 EcoHabit 房产顾问。\n\n"
-      "你可以问我关于 KL 任何区域的 **交通预测**、**租金趋势** 或 **宜居程度**。\n\n"
-      "试试问：\n"
-      "• Compare Cheras and Setapak\n"
-      "• 5-year rental growth";
+  // ✅ 1. 配置 API Key
+  static const String _apiKey = googleGeminiApiKey;
+  
+  GenerativeModel? _model;
+  
+  // 判断是否使用真 AI
+  bool get _useRealAI => _apiKey.isNotEmpty;
 
-  // 聊天记录列表
+  // --- 🇲🇾 初始欢迎语文案 (Mock) ---
+  
+  // 1. Standard Mode (Professional Manglish)
+  static const String _standardWelcome =
+      "Hello boss! 👋 EcoHabit agent here.\n\n"
+      "I connected to **Gemini Pro** already. Can help you check KL traffic, rental price, or see which area 'ong' for you.\n\n"
+      "What you want to ask today?";
+
+  // 2. Auntie Mode (Funny Manglish)
+  static const String _auntieWelcome = 
+      "Hello boy! 👋 Auntie here to help you find house.\n\n"
+      "Don't worry, Auntie know everything about KL property and where got jam.\n\n"
+      "What you want to know? Cheap one or near MRT?";
+
   final List<Map<String, dynamic>> _messages = [];
-
   bool _isTyping = false;
+  bool _isAuntieMode = false;
 
   @override
   void initState() {
     super.initState();
-    // ✅ 初始化：判断是“通用模式”还是“房源分析模式”
-    _initConversation();
+    _initGemini();
+    // 初始化时，清空历史 (isSwitchingMode = false)
+    _initConversation(isSwitchingMode: false);
   }
 
-  void _initConversation() {
-    String welcomeText;
-
-    if (widget.initialContext != null) {
-      // 模式 B: 从 Home 卡片进来 (有 Context)
-      final ctx = widget.initialContext!;
-      welcomeText = 
-          "Hi! 我看到你对 **${ctx['title']}** 感兴趣。🏡\n\n"
-          "已知你的工作地点在 **${ctx['workplace']}**，预算约 **${ctx['budget']}**。\n\n"
-          "关于这个房源，你可以问我：\n"
-          "1. 它的真实通勤时间 (Commute Reality)？\n"
-          "2. 这里的未来租金预测？\n"
-          "3. 相比 Setapak 这里的优势？";
-    } else {
-      // 模式 A: 从底部导航栏进来 (通用)
-      welcomeText = _genericWelcome;
+  void _initGemini() {
+    if (_useRealAI) {
+      _model = GenerativeModel(
+        model: 'gemini-1.5-flash', // 改回最新的 flash 模型
+        apiKey: _apiKey,
+        generationConfig: GenerationConfig(temperature: 0.9),
+      );
     }
+  }
 
-    _messages.add({"isUser": false, "text": welcomeText});
+  // ✅ 核心修改：初始化/重置对话逻辑
+  void _initConversation({bool isSwitchingMode = false}) {
+    String welcomeText;
+    
+    if (widget.initialContext != null) {
+      // 如果是从 Home 卡片进来 (带 Context)
+      final ctx = widget.initialContext!;
+      if (_isAuntieMode) {
+         welcomeText = "Wah! You eyeing **${ctx['title']}** is it? 🏡\n\n"
+            "Working at **${ctx['workplace']}**, budget around **${ctx['budget']}**.\n\n"
+            "Okay, Auntie tell you truth:\n"
+            "1. Got jam or not? (Commute)\n"
+            "2. Price worth it meh? (Value)";
+      } else {
+         welcomeText = "Hi! Looking at **${ctx['title']}**? 🏡\n\n"
+            "Workplace: **${ctx['workplace']}**\nBudget: **${ctx['budget']}**\n\n"
+            "I can analyze:\n"
+            "1. Real commute time (Traffic)\n"
+            "2. Hidden costs & Value";
+      }
+    } else {
+      // 如果是 Tab 进来 (无 Context)
+      welcomeText = _isAuntieMode ? _auntieWelcome : _standardWelcome;
+    }
+    
+    setState(() {
+      // 关键修改：如果是切换模式，不清空，只追加
+      // (如果你想清空，就把 !isSwitchingMode 改成 true)
+      // 这里根据你的要求：切换 mode 重新发初始信息，不清空旧记录
+      // if (!isSwitchingMode) { _messages.clear(); } 
+      
+      _messages.add({"isUser": false, "text": welcomeText});
+    });
+
+    // 如果是切换模式，自动滚动到底部看新消息
+    if (isSwitchingMode) {
+      _scrollToBottom();
+    }
   }
 
   @override
@@ -81,7 +126,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = preset ?? _controller.text.trim();
     if (text.isEmpty) return;
 
-    // 1. 用户消息上屏
     setState(() {
       _messages.add({"isUser": true, "text": text});
       _isTyping = true;
@@ -89,65 +133,103 @@ class _ChatScreenState extends State<ChatScreen> {
     _controller.clear();
     _scrollToBottom();
 
-    // 2. 模拟 AI 思考延迟
-    await Future.delayed(const Duration(seconds: 2));
+    // 模拟思考 UI
+    await Future.delayed(const Duration(seconds: 1));
 
     final input = text.toLowerCase();
     
-    // --- 智能逻辑路由 ---
+    // ====== 1. 特殊 UI 拦截 (Mock 逻辑) ======
 
     // A. 租金增长图表 (Chart)
-    if (input.contains("5 years") || input.contains("growth") || input.contains("rental") || input.contains("租金")) {
+    if (input.contains("5 years") || input.contains("growth") || input.contains("chart") || input.contains("rental")) {
       _addChartResponse();
       return;
     }
 
-    // B. 针对 Context 的特定回答 (如果从 Home 进来)
-    if (widget.initialContext != null && (input.contains("commute") || input.contains("time") || input.contains("通勤"))) {
-       final workplace = widget.initialContext!['workplace'];
-       final title = widget.initialContext!['title'];
-       _addTextResponse(
-           "根据 GTFS 实时数据，从 **$title** 到 **$workplace**：\n\n"
-           "🟢 **MRT:** 35 分钟 (准时)\n"
-           "🔴 **开车:** 早高峰需 1小时 10分钟 (高拥堵)\n\n"
-           "建议：选择公共交通，每天可节省 35 分钟。"
-       );
+    // B. 房源推荐 (Property Card)
+    if (input.contains("cheras") || input.contains("best match") || input.contains("推荐")) {
+       _addPropertyRecommendation();
        return;
     } 
-
-    // C. 通用回答 (Keyword Based)
-    if (input.contains("cheras") || input.contains("why") || input.contains("推荐")) {
-      // 触发推荐卡片
-      _addPropertyRecommendation();
-      return;
-    } 
     
-    if (input.contains("setapak") || input.contains("traffic") || input.contains("堵车")) {
-      _addTextResponse(
-          "⚠️ **高拥堵风险 (High Traffic Stress)**\n\n"
-          "Setapak 区域在 7:30 AM 的拥堵指数高达 9/10。\n"
-          "🔴 Jalan Genting Klang 平均车速仅 15km/h。\n\n"
-          "除非你居家办公，否则建议避开。"
-      );
-      return;
+    // C. 毒舌模式 (Roast)
+    if (input.contains("roast")) {
+       String reply;
+       if (_isAuntieMode) {
+         reply = "Aiyo boy! You still looking at **Setapak**? 👵💢\n\n"
+             "You crazy ah? That road jam until you can finish watching whole K-Drama inside car!\n"
+             "Your car air-con spoil also never reach home yet.\n\n"
+             "Don't be stubborn, listen to Auntie: Find place near MRT lah!";
+       } else {
+         reply = "😤 **AI Roast Mode:**\n\n"
+             "Setapak? Bro, are you trying to speedrun burnout?\n"
+             "Living there means donating 15% of your life to traffic jams.\n"
+             "Do your mental health a favor: Choose Cheras.";
+       }
+       _addTextResponse(reply);
+       return;
     }
 
-    if (input.contains("price") || input.contains("cheap") || input.contains("便宜")) {
-      _addTextResponse(
-          "💰 **价格 vs 价值分析**\n\n"
-          "Setapak 看起来更便宜 (RM1100)，但存在大量隐形成本：\n"
-          "❌ Setapak: 房租 1100 + 养车 ~600 ≈ RM 1700+\n"
-          "✅ Cheras: 房租 1300 + MRT ~50 ≈ RM 1350\n\n"
-          "EcoHabit 帮你算的是**综合生活成本**。"
-      );
-      return;
+    // ====== 2. 真实 AI 接管 (Gemini API - 联网时) ======
+    if (_useRealAI) {
+      try {
+        // 🔥 动态构建 System Prompt (分类处理)
+        String systemInstruction;
+        
+        if (_isAuntieMode) {
+           // Auntie Mode Prompt
+           systemInstruction = "You are a funny Malaysian Auntie housing consultant. "
+               "Speak in heavy Manglish (lah, meh, aiyo, walao). "
+               "Be direct, slightly nagging but caring. Keep it short. "
+               "User asks: ";
+        } else {
+           // Standard Mode Prompt
+           systemInstruction = "You are EcoHabit, a professional housing consultant in Malaysia. "
+               "Speak in standard Malaysian English (professional but local context). "
+               "Be data-driven and concise. Focus on SDG 11. "
+               "User asks: ";
+        }
+
+        // 发送请求
+        final content = [Content.text(systemInstruction + text)];
+        
+        final response = await _model!.generateContent(content);
+        final aiText = response.text ?? "Aiyo, internet connection problem lah.";
+        
+        _addTextResponse(aiText);
+        return; 
+
+      } catch (e) {
+        print("Gemini Error: $e");
+      }
     }
 
-    // D. 默认回复
-    _addTextResponse(
-      "收到！正在调用 Gemini API 分析该区域的 Urban Density 和 Traffic Flow...\n\n"
-      "(Demo 提示: 试试问 'Why Cheras' 或 '5 years growth')"
-    );
+    // ====== 3. 兜底 Mock 逻辑 (没有 Key 或 断网) ======
+    _fallbackMockResponse(input);
+  }
+
+  void _fallbackMockResponse(String input) {
+     String reply;
+     
+     if (input.contains("setapak") || input.contains("traffic")) {
+        if (_isAuntieMode) {
+           reply = "⚠️ **Auntie Warning:**\n\nSetapak jam gila! Morning 7am confirm stuck. Better you find MRT house.";
+        } else {
+           reply = "⚠️ **Traffic Alert:**\n\nSetapak area has high congestion (Index 9/10). Average speed 15km/h.";
+        }
+     } else if (input.contains("price") || input.contains("cheap")) {
+        if (_isAuntieMode) {
+           reply = "💰 **Auntie Math:**\n\nCheap rent but expensive petrol! You count properly. Cheras got MRT, save money save time.";
+        } else {
+           reply = "💰 **Cost Benefit:**\n\nSetapak has lower rent, but higher hidden costs (fuel + time). Cheras offers better value via public transport.";
+        }
+     } else {
+        reply = _isAuntieMode 
+            ? "Aiya, I don't understand. Ask me 'Why Cheras' or click that 'Roast' button lah!" 
+            : "Received. Analyzing data... (Demo Mode: Try asking 'Why Cheras' or 'Roast Setapak')";
+     }
+     
+     _addTextResponse(reply);
   }
 
   void _addTextResponse(String text) {
@@ -159,14 +241,17 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
   }
 
+  // --- UI Widget Helpers ---
+
   void _addChartResponse() {
     const baseRent = 1300.0;
     const growthRate = 0.04;
     final List<double> projected = List.generate(
         5, (i) => baseRent * math.pow(1 + growthRate, i).toDouble());
 
-    const explanation = "📈 基于 Demo 数据的未来 5 年租金增长预测：\n"
-        "假设每年约 4% 增长，该区域资产增值潜力巨大。";
+    final explanation = _isAuntieMode
+       ? "📈 **See Auntie tell you!**\nPrice go up 4% every year! Buy now wait for durian drop ah?"
+       : "📈 **Market Prediction:**\nBased on historical data, expect ~4% yearly rental growth.";
 
     if (!mounted) return;
     setState(() {
@@ -174,7 +259,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.add({"isUser": false, "text": explanation});
       _messages.add({
         "isUser": false,
-        "text": "未来 5 年租金预测",
+        "text": "Rental Forecast",
         "chartData": projected,
       });
     });
@@ -182,37 +267,38 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _addPropertyRecommendation() {
-    const aiResponse =
-          "根据模型分析，我强烈推荐 **Cheras** 🌟。\n\n"
-          "📊 **关键数据对比：**\n"
-          "• Last-Mile：步行 400m 即达 MRT，完美避开拥堵。\n"
-          "• 早高峰车速预估比 Setapak 快 45%。\n\n"
-          "👇 **我为你锁定了这个高匹配度房源：**";
+      final aiResponse = _isAuntieMode
+          ? "Auntie recommend this **Cheras** one! 👍\n\n"
+            "• MRT so near, walk 5 mins reach.\n"
+            "• No jam in morning, can sleep more.\n"
+            "👇 **See this one, very nice:**"
+          : "Based on our analysis, **Cheras** is the Top Pick 🌟.\n\n"
+            "• **Efficiency:** 40% less time in traffic.\n"
+            "• **Connectivity:** 400m to MRT station.\n"
+            "👇 **Best Match Property:**";
 
-    // 模拟房源数据
-    final propertyData = {
-      "title": "Cheras Green Condo",
-      "price": "RM 1,300",
-      "image": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
-      "score": 92,
-      "location": "Cheras, KL"
-    };
+      final propertyData = {
+        "title": "Cheras Green Condo",
+        "price": "RM 1,300",
+        "image": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+        "score": 92,
+        "location": "Cheras, KL"
+      };
 
-    if (!mounted) return;
-    setState(() {
-      _isTyping = false;
-      _messages.add({
-        "isUser": false,
-        "text": aiResponse,
-        "propertyCard": propertyData,
+      if (!mounted) return;
+      setState(() {
+        _isTyping = false;
+        _messages.add({
+          "isUser": false,
+          "text": aiResponse,
+          "propertyCard": propertyData,
+        });
       });
-    });
-    _scrollToBottom();
+      _scrollToBottom();
   }
 
   @override
   Widget build(BuildContext context) {
-    // 只有从 Home 跳转过来才显示 AppBar 返回键
     final bool showBackButton = widget.initialContext != null;
 
     return Scaffold(
@@ -223,10 +309,8 @@ class _ChatScreenState extends State<ChatScreen> {
             backgroundColor: Colors.white,
             elevation: 1,
             iconTheme: const IconThemeData(color: Colors.black),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.pop(context),
-            ),
+            leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+            actions: [ _buildAuntieSwitch(), const SizedBox(width: 10) ],
           )
         : null,
       
@@ -242,20 +326,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 constraints: const BoxConstraints(maxWidth: 900),
                 child: Column(
                   children: [
-                    // 只有 Tab 模式才显示那个漂亮的 Header
                     if (!showBackButton) _buildModernHeader(),
-                    
+                    const SizedBox(height: 8),
+                    if (widget.initialContext != null) _buildContextInfoCard(widget.initialContext!),
+                    if (widget.initialContext == null) _buildScenarioCard(),
                     const SizedBox(height: 8),
                     
-                    // ✅ 如果有 Context，显示房源信息 Chip
-                    if (widget.initialContext != null) 
-                      _buildContextInfoCard(widget.initialContext!),
-                    
-                    // ✅ 如果没有 Context，显示通用 Chips
-                    if (widget.initialContext == null)
-                      _buildScenarioCard(),
-
-                    const SizedBox(height: 8),
                     Expanded(
                       child: Column(
                         children: [
@@ -265,34 +341,27 @@ class _ChatScreenState extends State<ChatScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                               itemCount: _messages.length + (_isTyping ? 1 : 0),
                               itemBuilder: (context, index) {
-                                if (_isTyping && index == _messages.length) {
-                                  return _buildTypingIndicator();
-                                }
+                                if (_isTyping && index == _messages.length) return _buildTypingIndicator();
                                 final msg = _messages[index];
-                                final isUser = msg["isUser"] as bool? ?? false;
-                                final text = msg["text"] as String? ?? "";
-
-                                // 渲染图表
                                 if (msg["chartData"] != null) {
                                   return _buildChartBubble(
-                                    text: text,
+                                    text: msg["text"],
                                     data: (msg["chartData"] as List).cast<double>(),
                                   );
                                 }
-
-                                // 渲染卡片
                                 if (msg["propertyCard"] != null) {
                                   return Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      _buildMessageBubble(isUser: isUser, text: text),
+                                      _buildMessageBubble(isUser: false, text: msg["text"]),
                                       _buildPropertyCardBubble(msg["propertyCard"]),
                                     ],
                                   );
                                 }
-
-                                // 渲染普通文字
-                                return _buildMessageBubble(isUser: isUser, text: text);
+                                return _buildMessageBubble(
+                                  isUser: msg["isUser"] ?? false,
+                                  text: msg["text"] ?? "",
+                                );
                               },
                             ),
                           ),
@@ -310,336 +379,99 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // --- Widget: 显示当前讨论房源 ---
+  // --- UI WIDGETS (保持不变) ---
+
+  Widget _buildAuntieSwitch() {
+    return Row(
+      children: [
+        Text(_isAuntieMode ? "👵 Auntie" : "🤖 Standard", style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+        Switch(
+          value: _isAuntieMode,
+          activeColor: Colors.teal,
+          onChanged: (value) {
+             setState(() {
+               _isAuntieMode = value;
+               // 切换模式，传入 true 表示保留历史，仅追加新开场白
+               _initConversation(isSwitchingMode: true); 
+             });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15), 
+      decoration: BoxDecoration(color: Colors.white.withOpacity(0.95), boxShadow: [BoxShadow(color: Colors.teal.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))]), 
+      child: Row(
+        children: [
+          Container(padding: const EdgeInsets.all(2), decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.teal, width: 2)), child: const CircleAvatar(backgroundColor: Colors.teal, radius: 18, child: Icon(Icons.smart_toy, color: Colors.white, size: 20))), 
+          const SizedBox(width: 12), 
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text("EcoHabit Insight Agent", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), 
+            Row(children: [Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle)), const SizedBox(width: 5), Text("Powered by Gemini AI", style: TextStyle(fontSize: 12, color: Colors.grey[600]))])
+          ]), 
+          const Spacer(), 
+          _buildAuntieSwitch(), // 复用 Switch
+        ]
+      ),
+    );
+  }
+
   Widget _buildContextInfoCard(Map<String, dynamic> ctx) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.teal.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.teal.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.home, size: 16, color: Colors.teal),
-          const SizedBox(width: 8),
-          Text("Discussing: ${ctx['title']}", style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 12)),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.teal.withOpacity(0.3))),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.home, size: 16, color: Colors.teal), const SizedBox(width: 8), Text("Discussing: ${ctx['title']}", style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 12))]),
     );
   }
 
-  // --- Widget: 房源推荐卡片 ---
   Widget _buildPropertyCardBubble(Map<String, dynamic> data) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 15, left: 4, right: 20),
-        width: 280,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.teal.withOpacity(0.15)),
-          boxShadow: [
-            BoxShadow(color: Colors.teal.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 6))
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-              child: Image.network(
-                data['image'],
-                height: 140,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (ctx, _, __) => Container(height: 140, color: Colors.grey[200], child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey))),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(data['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(data['price'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal, fontSize: 15)),
-                      Text(data['location'], style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(6)),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.eco, size: 14, color: Colors.green),
-                        const SizedBox(width: 4),
-                        Text("Eco-Score: ${data['score']}", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green[800])),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 36,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Navigating to Map Details...")));
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        elevation: 0,
-                      ),
-                      child: const Text("View Details"),
-                    ),
-                  )
-                ],
-              ),
-            )
-          ],
-        ),
-      ),
-    );
+    return Align(alignment: Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15, left: 4, right: 20), width: 280, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.teal.withOpacity(0.15)), boxShadow: [BoxShadow(color: Colors.teal.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 6))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(15)), child: Image.network(data['image'], height: 140, width: double.infinity, fit: BoxFit.cover, errorBuilder: (ctx, _, __) => Container(height: 140, color: Colors.grey[200], child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey))))), Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(data['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), const SizedBox(height: 4), Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(data['price'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal, fontSize: 15)), Text(data['location'], style: TextStyle(color: Colors.grey[600], fontSize: 12))]), const SizedBox(height: 10), Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(6)), child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.eco, size: 14, color: Colors.green), const SizedBox(width: 4), Text("Eco-Score: ${data['score']}", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green[800]))])), const SizedBox(height: 12), SizedBox(width: double.infinity, height: 36, child: ElevatedButton(onPressed: () { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Navigating to Map Details..."))); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0), child: const Text("View Details")))]))])));
   }
 
-  // --- Widget: Header ---
-  Widget _buildModernHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
-        boxShadow: [BoxShadow(color: Colors.teal.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.teal, width: 2)),
-            child: const CircleAvatar(backgroundColor: Colors.teal, radius: 18, child: Icon(Icons.smart_toy, color: Colors.white, size: 20)),
-          ),
-          const SizedBox(width: 12),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text("EcoHabit Insight Agent", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            Row(children: [
-              Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle)),
-              const SizedBox(width: 5),
-              Text("Powered by Gemini AI", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            ]),
-          ]),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.grey),
-            onPressed: () => setState(() { _messages.clear(); _initConversation(); _isTyping = false; }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- Widget: Scenario Chips ---
   Widget _buildScenarioCard() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 3))],
-        ),
-        child: Wrap(spacing: 8, runSpacing: 4, children: const [
-          _ScenarioChip(icon: Icons.work_outline, label: "Work: KL Sentral"),
-          _ScenarioChip(icon: Icons.account_balance_wallet_outlined, label: "Budget: RM1500"),
-          _ScenarioChip(icon: Icons.directions_subway_outlined, label: "Prefer near MRT"),
-        ]),
-      ),
-    );
+    return Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10), decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 3))]), child: Wrap(spacing: 8, runSpacing: 4, children: const [_ScenarioChip(icon: Icons.work_outline, label: "Work: KL Sentral"), _ScenarioChip(icon: Icons.account_balance_wallet_outlined, label: "Budget: RM1500"), _ScenarioChip(icon: Icons.directions_subway_outlined, label: "Prefer near MRT")])));
   }
 
-  // --- Widget: Input Container ---
   Widget _buildInputContainer() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildSuggestionChips(),
-          const SizedBox(height: 10),
-          _buildInputArea(),
-        ],
-      ),
-    );
+    return Container(decoration: BoxDecoration(color: Colors.white, borderRadius: const BorderRadius.vertical(top: Radius.circular(30)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))]), padding: const EdgeInsets.all(16), child: Column(children: [_buildSuggestionChips(), const SizedBox(height: 10), _buildInputArea()]));
   }
 
-  // --- Widget: Suggestion Chips ---
   Widget _buildSuggestionChips() {
-    final suggestions = ["⚔️ Cheras vs Setapak", "📈 5-year rental growth"];
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(children: suggestions.map((s) => Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: ActionChip(
-          label: Text(s, style: TextStyle(color: Colors.teal[800], fontWeight: FontWeight.w600, fontSize: 12)),
-          backgroundColor: Colors.teal[50],
-          side: BorderSide(color: Colors.teal.withOpacity(0.2)),
-          avatar: const Icon(Icons.flash_on, size: 16, color: Colors.teal),
-          onPressed: () => _sendMessage(s),
-        ),
-      )).toList()),
-    );
+    final suggestions = ["⚔️ Cheras vs Setapak", "📈 5-year rental growth", "🔥 Roast Setapak"];
+    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: suggestions.map((s) {
+       final isRoast = s.contains("Roast");
+       return Padding(padding: const EdgeInsets.only(right: 8), child: ActionChip(label: Text(s, style: TextStyle(color: isRoast ? Colors.red[800] : Colors.teal[800], fontWeight: FontWeight.w600, fontSize: 12)), backgroundColor: isRoast ? Colors.red[50] : Colors.teal[50], side: BorderSide(color: isRoast ? Colors.red.withOpacity(0.3) : Colors.teal.withOpacity(0.2)), avatar: Icon(isRoast ? Icons.local_fire_department : Icons.flash_on, size: 16, color: isRoast ? Colors.red : Colors.teal), onPressed: () => _sendMessage(s)));
+    }).toList()));
   }
 
-  // --- Widget: Input Area ---
   Widget _buildInputArea() {
-    return Row(children: [
-      Expanded(
-        child: TextField(
-          controller: _controller,
-          onSubmitted: (_) => _sendMessage(),
-          decoration: InputDecoration(
-            hintText: "Ask AI advisor...",
-            filled: true, fillColor: const Color(0xFFF5F7FA),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          ),
-        ),
-      ),
-      const SizedBox(width: 10),
-      FloatingActionButton(
-        mini: true, onPressed: () => _sendMessage(),
-        backgroundColor: Colors.teal, child: const Icon(Icons.send, size: 18, color: Colors.white),
-      ),
-    ]);
+    return Row(children: [Expanded(child: TextField(controller: _controller, onSubmitted: (_) => _sendMessage(), decoration: InputDecoration(hintText: "Ask AI advisor...", filled: true, fillColor: const Color(0xFFF5F7FA), border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none), contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14)))), const SizedBox(width: 10), FloatingActionButton(mini: true, onPressed: () => _sendMessage(), backgroundColor: Colors.teal, child: const Icon(Icons.send, size: 18, color: Colors.white))]);
   }
 
-  // --- Widget: Text Bubble ---
   Widget _buildMessageBubble({required bool isUser, required String text}) {
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        constraints: const BoxConstraints(maxWidth: 320),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        decoration: BoxDecoration(
-          gradient: isUser ? const LinearGradient(colors: [Color(0xFF009688), Color(0xFF4DB6AC)]) : null,
-          color: isUser ? null : Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20), topRight: const Radius.circular(20),
-            bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(5),
-            bottomRight: isUser ? const Radius.circular(5) : const Radius.circular(20),
-          ),
-          boxShadow: [
-            isUser 
-              ? BoxShadow(color: Colors.teal.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))
-              : BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 5, offset: const Offset(0, 2))
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (!isUser) Padding(
-              padding: const EdgeInsets.only(bottom: 5),
-              child: Text("AI ANALYSIS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.teal[800], letterSpacing: 1)),
-            ),
-            Text(text, style: TextStyle(color: isUser ? Colors.white : Colors.black87, fontSize: 15, height: 1.5)),
-          ],
-        ),
-      ),
-    );
+    return Align(alignment: isUser ? Alignment.centerRight : Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15), constraints: const BoxConstraints(maxWidth: 320), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15), decoration: BoxDecoration(gradient: isUser ? const LinearGradient(colors: [Color(0xFF009688), Color(0xFF4DB6AC)]) : null, color: isUser ? null : Colors.white, borderRadius: BorderRadius.only(topLeft: const Radius.circular(20), topRight: const Radius.circular(20), bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(5), bottomRight: isUser ? const Radius.circular(5) : const Radius.circular(20)), boxShadow: [isUser ? BoxShadow(color: Colors.teal.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)) : BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 5, offset: const Offset(0, 2))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [if (!isUser) Padding(padding: const EdgeInsets.only(bottom: 5), child: Text(_isAuntieMode ? "AUNTIE SAYS" : "AI ANALYSIS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.teal[800], letterSpacing: 1))), Text(text, style: TextStyle(color: isUser ? Colors.white : Colors.black87, fontSize: 15, height: 1.5))])));
   }
 
-  // --- Widget: Chart Bubble ---
   Widget _buildChartBubble({required String text, required List<double> data}) {
     final maxValue = data.isEmpty ? 0.0 : data.reduce(math.max);
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.all(16),
-        constraints: const BoxConstraints(maxWidth: 360),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.12), blurRadius: 8, offset: const Offset(0, 3))]),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("RENTAL PROJECTION", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.teal, letterSpacing: 1.1)),
-            const SizedBox(height: 6),
-            Text(text, style: const TextStyle(fontSize: 13, color: Colors.black87, height: 1.3)),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 150,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: List.generate(data.length, (index) {
-                  final value = data[index];
-                  final factor = maxValue == 0 ? 0.0 : value / maxValue;
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Container(
-                        width: 18, height: 100 * factor,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(6), gradient: const LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xFF2E7D32), Color(0xFF81C784)])),
-                      ),
-                      const SizedBox(height: 6),
-                      Text("Y${index + 1}", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-                      Text("RM${value.toStringAsFixed(0)}", style: const TextStyle(fontSize: 10, color: Colors.black54)),
-                    ],
-                  );
-                }),
-              ),
-            )
-          ],
-        ),
-      ),
-    );
+    return Align(alignment: Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15), padding: const EdgeInsets.all(16), constraints: const BoxConstraints(maxWidth: 360), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.12), blurRadius: 8, offset: const Offset(0, 3))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text("RENTAL PROJECTION", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.teal, letterSpacing: 1.1)), const SizedBox(height: 6), Text(text, style: const TextStyle(fontSize: 13, color: Colors.black87, height: 1.3)), const SizedBox(height: 10), SizedBox(height: 150, child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, crossAxisAlignment: CrossAxisAlignment.end, children: List.generate(data.length, (index) { final value = data[index]; final factor = maxValue == 0 ? 0.0 : value / maxValue; return Column(mainAxisAlignment: MainAxisAlignment.end, children: [Container(width: 18, height: 100 * factor, decoration: BoxDecoration(borderRadius: BorderRadius.circular(6), gradient: const LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xFF2E7D32), Color(0xFF81C784)])),), const SizedBox(height: 6), Text("Y${index + 1}", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)), Text("RM${value.toStringAsFixed(0)}", style: const TextStyle(fontSize: 10, color: Colors.black54))]); }))) ])));
   }
 
-  // --- Widget: Typing Indicator ---
   Widget _buildTypingIndicator() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.teal)),
-          const SizedBox(width: 10),
-          Text("Analyzing traffic & rent data...", style: TextStyle(color: Colors.grey[600], fontSize: 12, fontStyle: FontStyle.italic)),
-        ]),
-      ),
-    );
+    return Align(alignment: Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)), child: Row(mainAxisSize: MainAxisSize.min, children: [const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.teal)), const SizedBox(width: 10), Text("Thinking...", style: TextStyle(color: Colors.grey[600], fontSize: 12, fontStyle: FontStyle.italic))])));
   }
 }
 
-// --- Widget: Simple Scenario Chip ---
 class _ScenarioChip extends StatelessWidget {
   final IconData icon;
   final String label;
   const _ScenarioChip({required this.icon, required this.label});
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(999)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 13, color: Colors.black54), const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11.5)),
-      ]),
-    );
+    return Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(999)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 13, color: Colors.black54), const SizedBox(width: 4), Text(label, style: const TextStyle(fontSize: 11.5))]));
   }
 }
