@@ -204,15 +204,10 @@ firebase login
 flutterfire configure
 ```
 
-*Note: Ensure **Vertex AI API** is enabled in your Google Cloud Console for this project.*
+*Note: Ensure **Gemini Developer API** is enabled in your Google Cloud Console for this project.*
 
-### 4\. API Keys & Assets
 
-1.  **Google Maps:** Open `web/index.html` and paste your API Key in the script tag:
-    `<script src="https://maps.googleapis.com/...key=YOUR_KEY_HERE"></script>`
-2.  **Assets:** Ensure `assets/rabbit.png` exists in the root directory for the branded experience.
-
-### 5\. Run the App (Web Mode)
+### 4\. Run the App (Web Mode)
 
 EcoHabit is optimized for Web. Run the following command to launch in Chrome:
 
