@@ -1,12 +1,11 @@
 // lib/models/property_model.dart
-// lib/models/property_model.dart
 class PropertyResult {
   final String id;
   final String name;
   final double distanceToWork;
   final String area;
   final double price;
-  int ecoScore; // 移除 final，使其可修改
+  int ecoScore;
   final PropertyDetails details;
   final String imageUrl;
 
@@ -16,7 +15,7 @@ class PropertyResult {
     required this.distanceToWork,
     required this.area,
     required this.price,
-    required this.ecoScore, // 保持 required
+    required this.ecoScore,
     required this.details,
     required this.imageUrl,
   });
