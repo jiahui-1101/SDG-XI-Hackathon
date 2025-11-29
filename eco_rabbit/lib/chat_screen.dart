@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:firebase_ai/firebase_ai.dart'; // 确认用的是 firebase_ai
+import 'package:firebase_ai/firebase_ai.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 
@@ -16,7 +16,6 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  // 🔥 新增：专门给底部按钮用的滚动控制器
   final ScrollController _chipsScrollController = ScrollController(); 
 
   late GenerativeModel _model;
@@ -110,7 +109,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _initFirebaseAI() {
     try {
       _model = FirebaseAI.googleAI().generativeModel(
-        model: 'gemini-1.5-flash', 
+        model: 'gemini-2.5-flash', 
         generationConfig: GenerationConfig(temperature: 0.9),
       );
     } catch (e) {
@@ -149,7 +148,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
-    _chipsScrollController.dispose(); // 记得销毁控制器
+    _chipsScrollController.dispose();
     _tts.stop();
     super.dispose();
   }
@@ -238,10 +237,11 @@ class _ChatScreenState extends State<ChatScreen> {
        return;
     } 
     
+    // 💌 2030 信件逻辑 (已修改：都是来自 "2030 You")
     if (input.contains("2030") || input.contains("future") || input.contains("letter")) {
        String reply = _isAuntieMode
-           ? "💌 **From 2030 Auntie:**\n\nAiyo boy! Luckily you listened to me and bought Cheras in 2025! Now that house value double already! MRT just downstairs, I go pasar also easy. Good choice!"
-           : "💌 **Message from 2030 You:**\n\nHey! Writing this from the future. Because you chose the Transit-Oriented home, we saved RM40,000 on car loans over 5 years. We just used that money for a Europe trip. Thank you!";
+           ? "💌 **Message from 2030 YOU:**\n\nWalao eh! Luckily you listened to me and bought Cheras in 2025! Now MRT just downstairs, I go pasar easy. Property value naik gila-gila! Good choice self!"
+           : "💌 **Message from 2030 YOU:**\n\nHey! Writing this from the future. Because you chose the Transit-Oriented home, we saved RM40,000 on car loans over 5 years. Just used that money for a Europe trip. Best decision ever.";
        _addTextResponse(reply);
        return;
     }
@@ -434,7 +434,6 @@ class _ChatScreenState extends State<ChatScreen> {
       decoration: BoxDecoration(color: Colors.white, borderRadius: const BorderRadius.vertical(top: Radius.circular(30)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))]), 
       padding: const EdgeInsets.all(16), 
       child: Column(children: [
-        // 🔥 重点：这里就是你想要的“Sliding Bar” (滚动条)！
         _buildSuggestionChips(), 
         const SizedBox(height: 10), 
         _buildInputArea()
@@ -442,21 +441,20 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // 🔥🔥🔥 核心修改：加了 Scrollbar 和防止文字截断 🔥🔥🔥
+  // Suggestion Chips (带 Scrollbar)
   Widget _buildSuggestionChips() {
     final suggestions = ["⚔️ Cheras vs Setapak", "📩 Message from 2030", "📈 Rental Growth", "🔥 Roast Setapak"];
     
-    // 使用 Scrollbar 包裹 SingleChildScrollView，并强制显示 thumb (滑块)
     return Scrollbar(
       controller: _chipsScrollController,
-      thumbVisibility: true, // 让滚动条一直显示，用户就知道能滑了！
+      thumbVisibility: true,
       trackVisibility: true,
       thickness: 6.0,
       radius: const Radius.circular(10),
       child: SingleChildScrollView(
         controller: _chipsScrollController,
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(bottom: 12), // 给滚动条留点空间
+        padding: const EdgeInsets.only(bottom: 12), 
         child: Row(
           children: suggestions.map((s) {
              final isRoast = s.contains("Roast");
@@ -465,11 +463,10 @@ class _ChatScreenState extends State<ChatScreen> {
              return Padding(
                padding: const EdgeInsets.only(right: 8), 
                child: ActionChip(
-                 // 强制文字不换行，且不显示省略号，完全展示
                  label: Text(s, style: TextStyle(
                    color: isRoast ? Colors.red[800] : (isLetter ? Colors.indigo[800] : Colors.teal[800]), 
                    fontWeight: FontWeight.w600, fontSize: 12),
-                   overflow: TextOverflow.visible, // 允许文字完全显示
+                   overflow: TextOverflow.visible, 
                    softWrap: false,
                  ), 
                  backgroundColor: isRoast ? Colors.red[50] : (isLetter ? Colors.indigo[50] : Colors.teal[50]), 
@@ -498,8 +495,10 @@ class _ChatScreenState extends State<ChatScreen> {
     ]);
   }
 
+  // 🔥 修正：气泡最大宽度设为屏幕宽度的 60%，或者不超过 600px
   Widget _buildMessageBubble({required bool isUser, required String text, required double screenWidth}) {
-    final maxBubbleWidth = screenWidth * 0.75;
+    final maxBubbleWidth = math.min(screenWidth * 0.6, 600.0); // 限制最大宽度，防止拉太长
+
     return Align(alignment: isUser ? Alignment.centerRight : Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15), 
       constraints: BoxConstraints(maxWidth: maxBubbleWidth), 
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15), decoration: BoxDecoration(gradient: isUser ? const LinearGradient(colors: [Color(0xFF009688), Color(0xFF4DB6AC)]) : null, color: isUser ? null : Colors.white, borderRadius: BorderRadius.only(topLeft: const Radius.circular(20), topRight: const Radius.circular(20), bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(5), bottomRight: isUser ? const Radius.circular(5) : const Radius.circular(20)), boxShadow: [isUser ? BoxShadow(color: Colors.teal.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)) : BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 5, offset: const Offset(0, 2))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -520,9 +519,11 @@ class _ChatScreenState extends State<ChatScreen> {
     return Align(alignment: Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15, left: 4, right: 20), width: 300, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.teal.withOpacity(0.15)), boxShadow: [BoxShadow(color: Colors.teal.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 6))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(15)), child: Image.network(data['image'], height: 160, width: double.infinity, fit: BoxFit.cover, errorBuilder: (ctx, _, __) => Container(height: 140, color: Colors.grey[200], child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey))))), Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(data['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), const SizedBox(height: 4), Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(data['price'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal, fontSize: 15)), Text(data['location'], style: TextStyle(color: Colors.grey[600], fontSize: 12))]), const SizedBox(height: 10), Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(6)), child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.eco, size: 14, color: Colors.green), const SizedBox(width: 4), Text("Eco-Score: ${data['score']}", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green[800]))])), const SizedBox(height: 12), SizedBox(width: double.infinity, height: 36, child: ElevatedButton(onPressed: () { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Navigating to Map Details..."))); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0), child: const Text("View Details")))]))])));
   }
 
+  // 气泡宽度同样应用 maxBubbleWidth
   Widget _buildChartBubble({required String text, required List<double> data, required double screenWidth}) {
+    final maxBubbleWidth = math.min(screenWidth * 0.6, 600.0);
     return Align(alignment: Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15), padding: const EdgeInsets.all(16), 
-      constraints: BoxConstraints(maxWidth: screenWidth * 0.8), 
+      constraints: BoxConstraints(maxWidth: maxBubbleWidth), 
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.12), blurRadius: 8, offset: const Offset(0, 3))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text("RENTAL PROJECTION", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.teal, letterSpacing: 1.1)), const SizedBox(height: 6), Text(text, style: const TextStyle(fontSize: 13, color: Colors.black87, height: 1.3)), const SizedBox(height: 10), SizedBox(height: 150, child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, crossAxisAlignment: CrossAxisAlignment.end, children: List.generate(data.length, (index) { final value = data[index]; final maxValue = data.reduce(math.max); final factor = maxValue == 0 ? 0.0 : value / maxValue; return Column(mainAxisAlignment: MainAxisAlignment.end, children: [Container(width: 18, height: 100 * factor, decoration: BoxDecoration(borderRadius: BorderRadius.circular(6), gradient: const LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xFF2E7D32), Color(0xFF81C784)])),), const SizedBox(height: 6), Text("Y${index + 1}", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)), Text("RM${value.toStringAsFixed(0)}", style: const TextStyle(fontSize: 10, color: Colors.black54))]); }))) ])));
   }
 
