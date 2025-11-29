@@ -1,12 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart'; // 🔥 新增：Firebase 核心包
+import 'firebase_options.dart'; // 🔥 新增：Firebase 配置文件 (由 CLI 生成)
+
+// 你的其他页面 Imports
 import 'home_screen.dart';
 import 'map_screen.dart';
 import 'chat_screen.dart';
 import 'result_display_screen.dart';
 import 'information_house_screen.dart';
 
-void main() {
+// ========== 修改后的 Main 函数 ==========
+void main() async { // 🔥 1. 变成异步函数
+  // 🔥 2. 确保 Flutter 绑定初始化
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 🔥 3. 初始化 Firebase (自动适配 Web/Android/iOS)
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const EcoRabbitWeb());
 }
 
@@ -23,13 +36,13 @@ class EcoRabbitWeb extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF5F7FA), // 浅灰背景，适合 Web
       ),
-      // 👇 入口改为 WelcomeScreen (第一步)
+      // 👇 入口保持为 WelcomeScreen
       home: const WelcomeScreen(),
     );
   }
 }
 
-// ========== 1. WELCOME PAGE (兔子动画) ==========
+// ========== 1. WELCOME PAGE (兔子动画 - 保持不变) ==========
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
@@ -171,7 +184,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         children: [
                           Text(
                             'EcoRabbit',
-                          style: GoogleFonts.caveat(
+                            style: GoogleFonts.caveat(
                               fontSize: isDesktop ? 56 : 36,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF2E7D32),
@@ -180,7 +193,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           const SizedBox(height: 8),
                           Text(
                             'AI-Driven Smart Living Assistant',
-                           style: GoogleFonts.caveat(
+                            style: GoogleFonts.caveat(
                               fontSize: isDesktop ? 20 : 16,
                               color: const Color(0xFF388E3C),
                               fontWeight: FontWeight.w500,
@@ -200,7 +213,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 }
 
-// ========== ADD LOADING PAGE HERE ==========
+// ========== 2. LOADING PAGE (保持不变) ==========
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
 
@@ -347,7 +360,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                 Text(
+                 const Text(
                     'Loading',
                     style: TextStyle(
                       fontSize: 16,
@@ -413,7 +426,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
   }
 }
 
-// ========== 3. MAIN DASHBOARD (原本的主框架) ==========
+// ========== 3. MAIN DASHBOARD (保持不变) ==========
 class MainDashboardScaffold extends StatefulWidget {
   const MainDashboardScaffold({super.key});
 
