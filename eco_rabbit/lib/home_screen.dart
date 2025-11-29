@@ -19,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _hasSearched = false;
   String _workplace = "";
   String _currentLocation = ""; // 新增：当前居住地
-  
+
   // 添加结果数据
   List<PropertyResult> _allResults = [];
   List<PropertyResult> _displayedResults = [];
@@ -27,201 +27,198 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 在 _performSearch() 方法中添加弹窗提示
   // 在 _performSearch() 方法中添加弹窗提示
-void _performSearch() {
-  if (_workplace.isEmpty || _currentLocation.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please enter both workplace and current location')),
-    );
-    return;
+  void _performSearch() {
+    if (_workplace.isEmpty || _currentLocation.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Please enter both workplace and current location')),
+      );
+      return;
+    }
+
+    setState(() {
+      _hasSearched = true;
+    });
+
+    // 显示绿色搜索弹窗
+    _showSearchingPopup();
+
+    // 直接在当前页面加载和显示结果，不跳转
+    _loadAndCalculateResults();
   }
 
-  setState(() {
-    _hasSearched = true;
-  });
-
-  // 显示绿色搜索弹窗
-  _showSearchingPopup();
-
-  // 直接在当前页面加载和显示结果，不跳转
-  _loadAndCalculateResults();
-}
-
 // 绿色搜索弹窗提示
-void _showSearchingPopup() {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-      // 2秒后自动关闭并显示结果提示
-      Future.delayed(const Duration(seconds: 2), () {
-        Navigator.of(context).pop();
-        // 显示结果提示弹窗
-        _showResultsReadyPopup();
-      });
+  void _showSearchingPopup() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        // 2秒后自动关闭并显示结果提示
+        Future.delayed(const Duration(seconds: 2), () {
+          Navigator.of(context).pop();
+          // 显示结果提示弹窗
+          _showResultsReadyPopup();
+        });
 
-      return Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.green.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.green.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 绿色图标
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.search,
+                    color: Colors.green,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // 标题
+                Text(
+                  "Searching Eco-Homes",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green[800],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // 描述
+                Text(
+                  "Finding the best properties for your commute",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // 加载动画
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                    strokeWidth: 3,
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 绿色图标
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.search,
-                  color: Colors.green,
-                  size: 30,
-                ),
-              ),
-              const SizedBox(height: 16),
-              // 标题
-              Text(
-                "Searching Eco-Homes",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green[800],
-                ),
-              ),
-              const SizedBox(height: 8),
-              // 描述
-              Text(
-                "Finding the best properties for your commute",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 16),
-              // 加载动画
-              SizedBox(
-                width: 40,
-                height: 40,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                  strokeWidth: 3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
 // 简洁版结果提示弹窗
-void _showResultsReadyPopup() {
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (BuildContext context) {
-      // 3秒后自动关闭
-      Future.delayed(const Duration(seconds: 3), () {
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
-        }
-      });
+  void _showResultsReadyPopup() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        // 3秒后自动关闭
+        Future.delayed(const Duration(seconds: 3), () {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        });
 
-      return Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.green.withOpacity(0.3),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 紧凑的图标和箭头
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Colors.green,
-                    size: 28,
-                  ),
-                  Positioned(
-                    bottom: -8,
-                    child: Icon(
-                      Icons.arrow_downward,
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.green.withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 紧凑的图标和箭头
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.check_circle,
                       color: Colors.green,
-                      size: 16,
+                      size: 28,
                     ),
+                    Positioned(
+                      bottom: -8,
+                      child: Icon(
+                        Icons.arrow_downward,
+                        color: Colors.green,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // 简洁的标题
+                Text(
+                  "Results Ready!",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green[800],
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // 简洁的标题
-              Text(
-                "Results Ready!",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green[800],
                 ),
-              ),
-              const SizedBox(height: 8),
-              // 简洁的描述
-              Text(
-                "Scroll down to view results",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[700],
+                const SizedBox(height: 8),
+                // 简洁的描述
+                Text(
+                  "Scroll down to view results",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[700],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   // Eco Score 算法 (保持不变)
   double _calculateEcoScore(PropertyResult property) {
     double affordabilityScore = _calculateAffordabilityScore(property.price);
     double connectivityScore = _calculateConnectivityScore(
-      property.details.distanceToStation,
-      property.details.commuteTime
-    );
-    double trafficRiskScore = _calculateTrafficRiskScore(
-      property.distanceToWork,
-      property.area
-    );
-    
-    return (affordabilityScore * 0.3) + 
-           (connectivityScore * 0.4) + 
-           (trafficRiskScore * 0.3);
+        property.details.distanceToStation, property.details.commuteTime);
+    double trafficRiskScore =
+        _calculateTrafficRiskScore(property.distanceToWork, property.area);
+
+    return (affordabilityScore * 0.3) +
+        (connectivityScore * 0.4) +
+        (trafficRiskScore * 0.3);
   }
 
   double _calculateAffordabilityScore(double rent) {
@@ -236,36 +233,51 @@ void _showResultsReadyPopup() {
   double _calculateConnectivityScore(int distanceToStation, int commuteTime) {
     double stationScore = 0;
     double commuteScore = 0;
-    
-    if (distanceToStation <= 200) stationScore = 100;
-    else if (distanceToStation <= 500) stationScore = 80;
-    else if (distanceToStation <= 1000) stationScore = 60;
-    else if (distanceToStation <= 1500) stationScore = 40;
-    else stationScore = 20;
-    
-    if (commuteTime <= 20) commuteScore = 100;
-    else if (commuteTime <= 35) commuteScore = 80;
-    else if (commuteTime <= 50) commuteScore = 60;
-    else if (commuteTime <= 65) commuteScore = 40;
-    else commuteScore = 20;
-    
+
+    if (distanceToStation <= 200)
+      stationScore = 100;
+    else if (distanceToStation <= 500)
+      stationScore = 80;
+    else if (distanceToStation <= 1000)
+      stationScore = 60;
+    else if (distanceToStation <= 1500)
+      stationScore = 40;
+    else
+      stationScore = 20;
+
+    if (commuteTime <= 20)
+      commuteScore = 100;
+    else if (commuteTime <= 35)
+      commuteScore = 80;
+    else if (commuteTime <= 50)
+      commuteScore = 60;
+    else if (commuteTime <= 65)
+      commuteScore = 40;
+    else
+      commuteScore = 20;
+
     return (stationScore * 0.6) + (commuteScore * 0.4);
   }
 
   double _calculateTrafficRiskScore(double distanceToWork, String area) {
     double distanceScore = 0;
     double areaScore = 0;
-    
-    if (distanceToWork <= 5) distanceScore = 100;
-    else if (distanceToWork <= 10) distanceScore = 80;
-    else if (distanceToWork <= 15) distanceScore = 60;
-    else if (distanceToWork <= 20) distanceScore = 40;
-    else distanceScore = 20;
-    
+
+    if (distanceToWork <= 5)
+      distanceScore = 100;
+    else if (distanceToWork <= 10)
+      distanceScore = 80;
+    else if (distanceToWork <= 15)
+      distanceScore = 60;
+    else if (distanceToWork <= 20)
+      distanceScore = 40;
+    else
+      distanceScore = 20;
+
     final lowCongestionAreas = ['Mont Kiara', 'KLCC', 'Bangsar South'];
     final mediumCongestionAreas = ['Petaling Jaya'];
     final highCongestionAreas = ['Cheras', 'Setapak'];
-    
+
     if (lowCongestionAreas.contains(area)) {
       areaScore = 100;
     } else if (mediumCongestionAreas.contains(area)) {
@@ -275,115 +287,120 @@ void _showResultsReadyPopup() {
     } else {
       areaScore = 60;
     }
-    
+
     return (distanceScore * 0.5) + (areaScore * 0.5);
   }
 
   void _loadAndCalculateResults() {
-  // 模拟数据 - 保持不变
-  final mockResults = [
-    PropertyResult(
-      id: '1',
-      name: 'Cheras Green Condo',
-      distanceToWork: 8.5,
-      area: 'Cheras',
-      price: 1300,
-      imageUrl: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
-      details: PropertyDetails(
-        bedrooms: 2,
-        bathrooms: 2,
-        size: 850,
-        amenities: ['Pool', 'Gym', 'MRT Shuttle'],
-        commuteTime: 35,
-        distanceToStation: 350,
+    // 模拟数据 - 保持不变
+    final mockResults = [
+      PropertyResult(
+        id: '1',
+        name: 'Cheras Green Condo',
+        distanceToWork: 8.5,
+        area: 'Cheras',
+        price: 1300,
+        imageUrl:
+            "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+        details: PropertyDetails(
+          bedrooms: 2,
+          bathrooms: 2,
+          size: 850,
+          amenities: ['Pool', 'Gym', 'MRT Shuttle'],
+          commuteTime: 35,
+          distanceToStation: 350,
+        ),
+        ecoScore: 0,
       ),
-      ecoScore: 0,
-    ),
-    PropertyResult(
-      id: '2',
-      name: 'Bangsar South Loft',
-      distanceToWork: 6.2,
-      area: 'Bangsar South',
-      price: 1800,
-      imageUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
-      details: PropertyDetails(
-        bedrooms: 1,
-        bathrooms: 1,
-        size: 650,
-        amenities: ['LRT Connected', 'Garden'],
-        commuteTime: 25,
-        distanceToStation: 150,
+      PropertyResult(
+        id: '2',
+        name: 'Bangsar South Loft',
+        distanceToWork: 6.2,
+        area: 'Bangsar South',
+        price: 1800,
+        imageUrl:
+            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+        details: PropertyDetails(
+          bedrooms: 1,
+          bathrooms: 1,
+          size: 650,
+          amenities: ['LRT Connected', 'Garden'],
+          commuteTime: 25,
+          distanceToStation: 150,
+        ),
+        ecoScore: 0,
       ),
-      ecoScore: 0,
-    ),
-    PropertyResult(
-      id: '3',
-      name: 'Setapak Budget Flat',
-      distanceToWork: 15.2,
-      area: 'Setapak',
-      price: 1100,
-      imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
-      details: PropertyDetails(
-        bedrooms: 3,
-        bathrooms: 2,
-        size: 1100,
-        amenities: ['Family Friendly', 'Parking'],
-        commuteTime: 55,
-        distanceToStation: 1200,
+      PropertyResult(
+        id: '3',
+        name: 'Setapak Budget Flat',
+        distanceToWork: 15.2,
+        area: 'Setapak',
+        price: 1100,
+        imageUrl:
+            "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+        details: PropertyDetails(
+          bedrooms: 3,
+          bathrooms: 2,
+          size: 1100,
+          amenities: ['Family Friendly', 'Parking'],
+          commuteTime: 55,
+          distanceToStation: 1200,
+        ),
+        ecoScore: 0,
       ),
-      ecoScore: 0,
-    ),
-    PropertyResult(
-      id: '4',
-      name: 'KLCC Sky View Condo',
-      distanceToWork: 3.5,
-      area: 'KLCC',
-      price: 2000,
-      imageUrl: "https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
-      details: PropertyDetails(
-        bedrooms: 2,
-        bathrooms: 2,
-        size: 900,
-        amenities: ['City View', 'Concierge'],
-        commuteTime: 15,
-        distanceToStation: 500,
+      PropertyResult(
+        id: '4',
+        name: 'KLCC Sky View Condo',
+        distanceToWork: 3.5,
+        area: 'KLCC',
+        price: 2000,
+        imageUrl:
+            "https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+        details: PropertyDetails(
+          bedrooms: 2,
+          bathrooms: 2,
+          size: 900,
+          amenities: ['City View', 'Concierge'],
+          commuteTime: 15,
+          distanceToStation: 500,
+        ),
+        ecoScore: 0,
       ),
-      ecoScore: 0,
-    ),
-    PropertyResult(
-      id: '5',
-      name: 'Mont Kiara Luxury Suite',
-      distanceToWork: 7.8,
-      area: 'Mont Kiara',
-      price: 2200,
-      imageUrl: "https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
-      details: PropertyDetails(
-        bedrooms: 3,
-        bathrooms: 2,
-        size: 1200,
-        amenities: ['Pool', 'Gym', 'Security'],
-        commuteTime: 30,
-        distanceToStation: 400,
+      PropertyResult(
+        id: '5',
+        name: 'Mont Kiara Luxury Suite',
+        distanceToWork: 7.8,
+        area: 'Mont Kiara',
+        price: 2200,
+        imageUrl:
+            "https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+        details: PropertyDetails(
+          bedrooms: 3,
+          bathrooms: 2,
+          size: 1200,
+          amenities: ['Pool', 'Gym', 'Security'],
+          commuteTime: 30,
+          distanceToStation: 400,
+        ),
+        ecoScore: 0,
       ),
-      ecoScore: 0,
-    ),
-  ];
+    ];
 
-  // 计算每个房源的Eco Score
-  for (var property in mockResults) {
-    property.ecoScore = _calculateEcoScore(property).round();
+    // 计算每个房源的Eco Score
+    for (var property in mockResults) {
+      property.ecoScore = _calculateEcoScore(property).round();
+    }
+
+    // 按Eco Score排序
+    mockResults.sort((a, b) => b.ecoScore.compareTo(a.ecoScore));
+
+    setState(() {
+      _allResults = mockResults;
+      // 确保默认显示前3个结果
+      _displayedResults = _allResults.take(3).toList();
+      _showAllResults = false; // 重置为显示Top 3
+    });
   }
-
-  // 按Eco Score排序
-  mockResults.sort((a, b) => b.ecoScore.compareTo(a.ecoScore));
-
-  setState(() {
-    _allResults = mockResults;
-    // 确保默认显示前3个结果
-    _displayedResults = _allResults.take(3).toList();
-    _showAllResults = false; // 重置为显示Top 3
-  });
-}
 
   // 其他方法保持不变...
   void _showAllResultsAction() {
@@ -402,13 +419,19 @@ void _showResultsReadyPopup() {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildScoreMetric("Affordability (30%)", "Based on rent/salary ratio", 0.3 * score),
-            _buildScoreMetric("Transport Connectivity (40%)", "Distance to public transport", 0.4 * score),
-            _buildScoreMetric("Low Traffic Risk (30%)", "Congestion zone analysis", 0.3 * score),
+            _buildScoreMetric("Affordability (30%)",
+                "Based on rent/salary ratio", 0.3 * score),
+            _buildScoreMetric("Transport Connectivity (40%)",
+                "Distance to public transport", 0.4 * score),
+            _buildScoreMetric("Low Traffic Risk (30%)",
+                "Congestion zone analysis", 0.3 * score),
             const SizedBox(height: 16),
             Text(
               "Total Score: $score/100",
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal),
             ),
           ],
         ),
@@ -429,13 +452,15 @@ void _showResultsReadyPopup() {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(description, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+          Text(description,
+              style: TextStyle(color: Colors.grey[600], fontSize: 12)),
           LinearProgressIndicator(
             value: score / 100,
             backgroundColor: Colors.grey[200],
             color: Colors.teal,
           ),
-          Text("${score.toStringAsFixed(1)} points", style: const TextStyle(fontSize: 12)),
+          Text("${score.toStringAsFixed(1)} points",
+              style: const TextStyle(fontSize: 12)),
         ],
       ),
     );
@@ -469,15 +494,20 @@ void _showResultsReadyPopup() {
             ),
           ),
           const SizedBox(width: 10),
-          CircleAvatar(
-  backgroundColor: Colors.orange[100],
-  radius: 18,
-  child: Icon(
-    Icons.pets, // 宠物图标，看起来像兔子
-    color: Colors.brown[600],
-    size: 20,
-  ),
-),
+          ClipOval(
+            // 🔥 这里的 'assets/rabbit_look.png' 必须存在你的文件夹里
+            // 如果没有，它会优雅地降级显示一个 Icon
+            child: Image.asset(
+              'assets/rabbit_look.png',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey[100],
+                  child: const Icon(Icons.pets, color: Colors.pink, size: 30),
+                );
+              },
+            ),
+          ),
           const SizedBox(width: 20),
         ],
         backgroundColor: Colors.white,
@@ -574,9 +604,11 @@ void _showResultsReadyPopup() {
                                 ),
                                 const SizedBox(height: 10),
                                 TextField(
-                                  onChanged: (value) => _currentLocation = value,
+                                  onChanged: (value) =>
+                                      _currentLocation = value,
                                   decoration: InputDecoration(
-                                    hintText: "e.g., Petaling Jaya, Subang Jaya",
+                                    hintText:
+                                        "e.g., Petaling Jaya, Subang Jaya",
                                     prefixIcon: const Icon(
                                       Icons.home_work_outlined,
                                       color: Colors.blue,
@@ -601,11 +633,13 @@ void _showResultsReadyPopup() {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
                                       "Monthly Budget",
-                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold),
                                     ),
                                     Text(
                                       "RM ${_budget.round()}",
@@ -636,11 +670,13 @@ void _showResultsReadyPopup() {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
                                       "Monthly Salary",
-                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold),
                                     ),
                                     Text(
                                       "RM ${_monthlySalary.round()}",
@@ -657,7 +693,8 @@ void _showResultsReadyPopup() {
                                   max: 20000,
                                   divisions: 36,
                                   activeColor: Colors.green,
-                                  onChanged: (v) => setState(() => _monthlySalary = v),
+                                  onChanged: (v) =>
+                                      setState(() => _monthlySalary = v),
                                 ),
                               ],
                             ),
@@ -666,11 +703,9 @@ void _showResultsReadyPopup() {
                       );
                     },
                   ),
-
                   const SizedBox(height: 20),
                   const Divider(),
                   const SizedBox(height: 20),
-
                   const Text(
                     "Preferred Vibe (Feature 2 Filter)",
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -688,19 +723,21 @@ void _showResultsReadyPopup() {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Icon(Icons.local_fire_department, color: Colors.red),
+                      const Icon(Icons.local_fire_department,
+                          color: Colors.red),
                     ],
                   ),
                   Center(
                     child: Text(
-                      _vibeValue < 0.5 ? "Currently: Quiet Area" : "Currently: Vibrant Area",
+                      _vibeValue < 0.5
+                          ? "Currently: Quiet Area"
+                          : "Currently: Vibrant Area",
                       style: const TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 30),
                   SizedBox(
                     width: double.infinity,
@@ -751,8 +788,11 @@ void _showResultsReadyPopup() {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    _showAllResults ? "All Results (${_allResults.length})" : "Top 3 Recommendations",
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    _showAllResults
+                        ? "All Results (${_allResults.length})"
+                        : "Top 3 Recommendations",
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   // 在首页的 See All 按钮
                   if (!_showAllResults && _allResults.length > 3)
@@ -775,10 +815,13 @@ void _showResultsReadyPopup() {
                         children: [
                           Text(
                             "See All",
-                            style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                color: Colors.teal,
+                                fontWeight: FontWeight.bold),
                           ),
                           SizedBox(width: 4),
-                          Icon(Icons.arrow_forward, size: 16, color: Colors.teal),
+                          Icon(Icons.arrow_forward,
+                              size: 16, color: Colors.teal),
                         ],
                       ),
                     ),
@@ -803,31 +846,36 @@ void _showResultsReadyPopup() {
                         ),
                       ),
                     )
-                  : 
-              // 在首页的结果显示部分
-              isDesktop
-                  ? GridView.count(
-                      crossAxisCount: 3, // 3个一行
-                      crossAxisSpacing: 20,
-                      mainAxisSpacing: 20,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      childAspectRatio: 0.65, // 调整宽高比
-                      children: _displayedResults.map((property) => 
-                        _buildResultCard(property, _displayedResults.indexOf(property) + 1)
-                      ).toList(),
-                    )
-                  : Column(
-                      children: _displayedResults.map((property) => 
-                        Column(
-                          children: [
-                            _buildResultCard(property, _displayedResults.indexOf(property) + 1),
-                            if (_displayedResults.indexOf(property) < _displayedResults.length - 1)
-                              const SizedBox(height: 20),
-                          ],
+                  :
+                  // 在首页的结果显示部分
+                  isDesktop
+                      ? GridView.count(
+                          crossAxisCount: 3, // 3个一行
+                          crossAxisSpacing: 20,
+                          mainAxisSpacing: 20,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          childAspectRatio: 0.65, // 调整宽高比
+                          children: _displayedResults
+                              .map((property) => _buildResultCard(property,
+                                  _displayedResults.indexOf(property) + 1))
+                              .toList(),
                         )
-                      ).toList(),
-                    ),
+                      : Column(
+                          children: _displayedResults
+                              .map((property) => Column(
+                                    children: [
+                                      _buildResultCard(
+                                          property,
+                                          _displayedResults.indexOf(property) +
+                                              1),
+                                      if (_displayedResults.indexOf(property) <
+                                          _displayedResults.length - 1)
+                                        const SizedBox(height: 20),
+                                    ],
+                                  ))
+                              .toList(),
+                        ),
 
               const SizedBox(height: 40),
             ],
@@ -865,7 +913,8 @@ void _showResultsReadyPopup() {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(18)),
                 child: Image.network(
                   property.imageUrl,
                   height: 140, // 减小图片高度
@@ -879,7 +928,8 @@ void _showResultsReadyPopup() {
                   top: 10,
                   left: 10,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: _getRankColor(rank).withOpacity(0.9),
                       borderRadius: BorderRadius.circular(12),
@@ -908,7 +958,8 @@ void _showResultsReadyPopup() {
                 child: GestureDetector(
                   onTap: () => _showScoreBreakdown(property.ecoScore),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: _getScoreColor(property.ecoScore).withOpacity(0.9),
                       borderRadius: BorderRadius.circular(12),
@@ -927,7 +978,8 @@ void _showResultsReadyPopup() {
                           ),
                         ),
                         const SizedBox(width: 2),
-                        const Icon(Icons.info_outline, size: 10, color: Colors.white),
+                        const Icon(Icons.info_outline,
+                            size: 10, color: Colors.white),
                       ],
                     ),
                   ),
@@ -935,7 +987,6 @@ void _showResultsReadyPopup() {
               ),
             ],
           ),
-
           Padding(
             padding: const EdgeInsets.all(12), // 减小内边距
             child: Column(
@@ -985,13 +1036,13 @@ void _showResultsReadyPopup() {
                   ],
                 ),
                 const SizedBox(height: 8),
-
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(4),
@@ -1005,7 +1056,8 @@ void _showResultsReadyPopup() {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(4),
@@ -1020,7 +1072,8 @@ void _showResultsReadyPopup() {
                     ),
                     if (property.details.distanceToStation <= 500)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
                           color: Colors.green.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
@@ -1035,7 +1088,6 @@ void _showResultsReadyPopup() {
                       ),
                   ],
                 ),
-
                 const SizedBox(height: 10),
                 const Text(
                   "Daily Commute Impact",
@@ -1079,7 +1131,9 @@ void _showResultsReadyPopup() {
                       ),
                     ),
                     Text(
-                      isRecommended ? "Save 40 mins" : (isWarning ? "Lose 1 hr" : "Average"),
+                      isRecommended
+                          ? "Save 40 mins"
+                          : (isWarning ? "Lose 1 hr" : "Average"),
                       style: const TextStyle(
                         fontSize: 9, // 减小字体大小
                         fontWeight: FontWeight.bold,
@@ -1087,7 +1141,6 @@ void _showResultsReadyPopup() {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -1100,7 +1153,8 @@ void _showResultsReadyPopup() {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => InformationHouseScreen(property: property),
+                                builder: (context) =>
+                                    InformationHouseScreen(property: property),
                               ),
                             );
                           },
@@ -1136,7 +1190,8 @@ void _showResultsReadyPopup() {
                                   'budget': 'RM ${_budget.round()}',
                                   'ecoScore': '${property.ecoScore}',
                                   'distance': '${property.distanceToWork}km',
-                                  'commute': '${property.details.commuteTime}min',
+                                  'commute':
+                                      '${property.details.commuteTime}min',
                                 },
                               ),
                             ),
@@ -1152,7 +1207,8 @@ void _showResultsReadyPopup() {
                         ),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.teal,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                             side: const BorderSide(color: Colors.teal),
@@ -1173,28 +1229,40 @@ void _showResultsReadyPopup() {
   // 辅助方法
   Color _getRankColor(int rank) {
     switch (rank) {
-      case 1: return Colors.amber;
-      case 2: return Colors.grey;
-      case 3: return Colors.orange;
-      default: return Colors.blue;
+      case 1:
+        return Colors.amber;
+      case 2:
+        return Colors.grey;
+      case 3:
+        return Colors.orange;
+      default:
+        return Colors.blue;
     }
   }
 
   IconData _getRankIcon(int rank) {
     switch (rank) {
-      case 1: return Icons.emoji_events;
-      case 2: return Icons.workspace_premium;
-      case 3: return Icons.military_tech;
-      default: return Icons.leaderboard;
+      case 1:
+        return Icons.emoji_events;
+      case 2:
+        return Icons.workspace_premium;
+      case 3:
+        return Icons.military_tech;
+      default:
+        return Icons.leaderboard;
     }
   }
 
   String _getRankText(int rank) {
     switch (rank) {
-      case 1: return "1st";
-      case 2: return "2nd";
-      case 3: return "3rd";
-      default: return "$rank" + "th";
+      case 1:
+        return "1st";
+      case 2:
+        return "2nd";
+      case 3:
+        return "3rd";
+      default:
+        return "$rank" + "th";
     }
   }
 
