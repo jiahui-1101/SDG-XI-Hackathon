@@ -11,11 +11,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   double _budget = 1500;
-  double _monthlySalary = 5000; // 新增月薪滑块
+  double _monthlySalary = 5000;
   double _vibeValue = 0.5;
   String _selectedChip = "Near MRT";
-  bool _hasSearched = false; // 控制是否显示结果部分
-  String _workplace = ""; // 存储工作地点
+  bool _hasSearched = false;
+  String _workplace = "";
 
   void _performSearch() {
     if (_workplace.isEmpty) {
@@ -29,7 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _hasSearched = true;
     });
 
-    // 导航到结果页面
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -82,40 +81,9 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: const Color(0xFFF8F9FD),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(30),
-        padding: const EdgeInsets.all(30),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Smart Commute Search",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              "Find a home that saves your time and the planet.",
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-
-            const SizedBox(height: 30),
-
-            // --- Search Card ---
-            Container(
-              padding: const EdgeInsets.all(30),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
             const Text(
               "Smart Commute Search",
               style: TextStyle(
@@ -222,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
-                          // Monthly Salary slider (新增)
+                          // Monthly Salary slider
                           SizedBox(
                             width: constraints.maxWidth > 600
                                 ? constraints.maxWidth * 0.45
@@ -358,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             workplace: _workplace,
                             budget: _budget,
                             monthlySalary: _monthlySalary,
-                            showAllResults: true, // 直接显示所有结果
+                            showAllResults: true,
                           ),
                         ),
                       );
@@ -391,14 +359,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _buildTop3Cards() {
-    // 这里可以调用你的Eco Score算法来获取前3个结果
     final topProperties = _getTop3Properties();
     
     if (MediaQuery.of(context).size.width > 800) {
-      // 桌面布局
       return topProperties.map((property) => Expanded(child: property)).toList();
     } else {
-      // 移动布局
       List<Widget> cards = [];
       for (int i = 0; i < topProperties.length; i++) {
         cards.add(topProperties[i]);
@@ -411,7 +376,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _getTop3Properties() {
-    // 模拟前3个房源数据 - 在实际应用中这里会调用你的Eco Score算法
     return [
       _buildPropertyCard(
         imageUrl: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
@@ -447,9 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
-  // --- Quick Filter Chip ---
   Widget _buildChoiceChip(String label, IconData icon) {
-    final bool isSelected = _selectedChip == label;
     final bool isSelected = _selectedChip == label;
     return GestureDetector(
       onTap: () => setState(() => _selectedChip = label),
@@ -471,26 +433,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   )
                 ]
               : [],
-          border: Border.all(
-            color: isSelected ? Colors.teal : Colors.grey[300]!,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.teal.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  )
-                ]
-              : [],
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.white : Colors.grey[600],
-            ),
             Icon(
               icon,
               size: 16,
@@ -504,21 +449,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey[700],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  // --- Property Card with Explain with AI ---
-  // --- Property Card with Explain with AI ---
   Widget _buildPropertyCard({
     required String imageUrl,
     required String title,
@@ -549,12 +485,10 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 图片
-          // 图片
           Stack(
             children: [
               ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(18)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                 child: Image.network(
                   imageUrl,
                   height: 160,
@@ -566,25 +500,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 top: 10,
                 right: 10,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isWarning
-                        ? Colors.red
-                        : (matchRate > 90
-                            ? Colors.teal
-                            : Colors.orange),
+                    color: isWarning ? Colors.red : (matchRate > 90 ? Colors.teal : Colors.orange),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.auto_awesome,
-                        color: Colors.white,
-                        size: 12,
-                      ),
+                      const Icon(Icons.auto_awesome, color: Colors.white, size: 12),
                       const SizedBox(width: 4),
                       Text(
                         "$matchRate% Match",
@@ -628,35 +551,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // 文本内容
-
-          // 文本内容
           Padding(
             padding: const EdgeInsets.all(15),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      price,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.teal,
-                        fontSize: 16,
-                      ),
-                    ),
                     Expanded(
                       child: Text(
                         title,
@@ -680,19 +582,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 5),
                 Row(
                   children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 14,
-                      color: Colors.grey[500],
-                    ),
+                    Icon(Icons.location_on, size: 14, color: Colors.grey[500]),
                     const SizedBox(width: 4),
-                    Text(
-                      location,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
-                    ),
                     Text(
                       location,
                       style: TextStyle(
@@ -703,7 +594,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-
 
                 Wrap(
                   spacing: 8,
@@ -727,16 +617,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       .toList(),
                 ),
 
-
                 const SizedBox(height: 15),
-                const Text(
-                  "Daily Commute Impact",
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
                 const Text(
                   "Daily Commute Impact",
                   style: TextStyle(
@@ -769,8 +650,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 5),
                 Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       isWarning ? "High Carbon" : "Low Carbon",
@@ -794,23 +674,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Show More Information Button
-                    // 查找 Show More Information Button 并修改：
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-      // 这里可以导航到详情页面
-                    },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green, // 绿底
-                        foregroundColor: Colors.white, // 白字
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // 这里可以导航到详情页面
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                        child: const Text(
+                          "Show More Information",
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ),
-    child: const Text(
-      "Show More Information",
-      style: TextStyle(fontSize: 12),
-    ),
-  ),
-),
+                    ),
                     const SizedBox(width: 8),
                     // Explain with AI Button
                     TextButton.icon(
