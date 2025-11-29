@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:firebase_ai/firebase_ai.dart'; // 🔥 修正：使用 Firebase AI Logic 包
+import 'package:firebase_ai/firebase_ai.dart'; // 确认用的是 firebase_ai
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 
@@ -16,20 +16,19 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  // 🔥 新增：专门给底部按钮用的滚动控制器
+  final ScrollController _chipsScrollController = ScrollController(); 
 
-  // 🔥 1. 核心组件
   late GenerativeModel _model;
   late stt.SpeechToText _speech;
   late FlutterTts _tts;
 
-  // 🔥 2. 状态变量
   final List<Map<String, dynamic>> _messages = [];
-  bool _isTyping = false;     // AI 正在思考
-  bool _isAuntieMode = false; // 模式切换
-  bool _isListening = false;  // 正在录音
-  bool _isSpeaking = false;   // 正在朗读
+  bool _isTyping = false;
+  bool _isAuntieMode = false;
+  bool _isListening = false;
+  bool _isSpeaking = false;
 
-  // --- 文案配置 ---
   static const String _standardWelcome =
       "Hello boss! 👋 EcoHabit agent here.\n\n"
       "Connected via **Firebase AI**. I can help check KL traffic & prices.\n\n"
@@ -44,51 +43,40 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _initVoiceFeatures();
-    _initFirebaseAI(); // 🔥 初始化 AI
+    _initFirebaseAI();
     _initConversation(isSwitchingMode: false);
   }
 
-  // ✅ 初始化语音组件 (TTS & STT)
   void _initVoiceFeatures() async {
     _speech = stt.SpeechToText();
     _tts = FlutterTts();
 
-    // 基础设置
     await _tts.setLanguage("en-US");
     await _tts.setSpeechRate(0.5);
     await _tts.setVolume(1.0);
     await _tts.setPitch(1.0);
 
-    // 监听 TTS 状态
     _tts.setStartHandler(() => setState(() => _isSpeaking = true));
     _tts.setCompletionHandler(() => setState(() => _isSpeaking = false));
     _tts.setErrorHandler((msg) => setState(() => _isSpeaking = false));
     
-    // 🔥 关键：等待一下让浏览器加载声音列表，然后预加载女声
     await Future.delayed(const Duration(milliseconds: 500));
     _findAndSetFemaleVoice(); 
   }
 
-  // 🔥🔥🔥 超级找女声逻辑 🔥🔥🔥
   Future<void> _findAndSetFemaleVoice() async {
     try {
       var voices = await _tts.getVoices;
       if (voices == null) return;
 
-      // 打印出来看看你电脑里有啥声音 (Debug用)
-      print("Available Voices: $voices");
-
-      // 1. 优先找马来西亚或新加坡声音 (Auntie 首选)
       var targetVoice = voices.firstWhere(
         (v) {
-            String name = v['name'].toString().toLowerCase();
             String locale = v['locale'].toString().toLowerCase();
             return locale.contains('my') || locale.contains('sg');
         },
         orElse: () => null,
       );
 
-      // 2. 如果没找到，找 Windows 经典女声 "Zira"
       if (targetVoice == null) {
         targetVoice = voices.firstWhere(
           (v) => v['name'].toString().toLowerCase().contains('zira'),
@@ -96,7 +84,6 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
 
-      // 3. 还没找到？找 Google 的女声
       if (targetVoice == null) {
         targetVoice = voices.firstWhere(
           (v) => v['name'].toString().contains('Google US English'),
@@ -104,7 +91,6 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
       
-      // 4. 还没找到？找任何带 "Female" 标签的声音
       if (targetVoice == null) {
          targetVoice = voices.firstWhere(
           (v) => v['name'].toString().toLowerCase().contains('female'),
@@ -112,12 +98,8 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
 
-      // 如果找到了目标声音，就强制设置！
       if (targetVoice != null) {
-        print("✅ Found Auntie Voice: ${targetVoice['name']}");
         await _tts.setVoice({"name": targetVoice["name"], "locale": targetVoice["locale"]});
-      } else {
-        print("⚠️ No specific female voice found, using default.");
       }
 
     } catch (e) {
@@ -125,11 +107,10 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // ✅ 核心修正：使用 FirebaseAI.googleAI()
   void _initFirebaseAI() {
     try {
       _model = FirebaseAI.googleAI().generativeModel(
-        model: 'gemini-2.5-flash', 
+        model: 'gemini-1.5-flash', 
         generationConfig: GenerationConfig(temperature: 0.9),
       );
     } catch (e) {
@@ -137,7 +118,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // ✅ 初始化对话
   void _initConversation({bool isSwitchingMode = false}) {
     String welcomeText;
     
@@ -169,6 +149,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
+    _chipsScrollController.dispose(); // 记得销毁控制器
     _tts.stop();
     super.dispose();
   }
@@ -185,7 +166,6 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // 🔥 语音：开始录音
   Future<void> _startListening() async {
     if (_isSpeaking) await _stopSpeaking(); 
 
@@ -194,11 +174,11 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() => _isListening = true);
       _speech.listen(
         onResult: (result) {
-          _controller.text = result.recognizedWords; // 实时上屏
+          _controller.text = result.recognizedWords; 
           
           if (result.finalResult) {
              _stopListening();
-             _sendMessage(result.recognizedWords); // 说完自动发
+             _sendMessage(result.recognizedWords); 
           }
         },
       );
@@ -210,24 +190,19 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _isListening = false);
   }
 
-  // 🔥 语音：朗读 (Auntie 声音最终优化版)
   Future<void> _speak(String text) async {
-    // 1. 清洗特殊符号
     String cleanText = text.replaceAll('*', '').replaceAll('#', '').replaceAll('👇', '');
     
-    // 2. 确保使用了我们找到的女声 (再次强制设置一次，防止跑偏)
     if (_isAuntieMode) {
-       await _findAndSetFemaleVoice(); // 确保用女声
-       await _tts.setPitch(1.2);      // 音调再高一点点，更像 Auntie
-       await _tts.setSpeechRate(0.6); // 语速快一点
+       await _findAndSetFemaleVoice(); 
+       await _tts.setPitch(1.2);      
+       await _tts.setSpeechRate(0.6); 
     } else {
-       // 标准模式用回默认
        await _tts.setLanguage("en-US");
        await _tts.setPitch(1.0);
        await _tts.setSpeechRate(0.5);
     }
     
-    // 3. 朗读
     await _tts.speak(cleanText);
   }
 
@@ -236,7 +211,6 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _isSpeaking = false);
   }
 
-  // ✅ 发送消息 (整合逻辑)
   Future<void> _sendMessage([String? preset]) async {
     if (_isTyping) return;
 
@@ -254,7 +228,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final input = text.toLowerCase();
 
-    // --- 1. 本地逻辑 ---
     if (input.contains("growth") || input.contains("rental") || input.contains("5 years")) {
       _addChartResponse();
       return;
@@ -265,15 +238,22 @@ class _ChatScreenState extends State<ChatScreen> {
        return;
     } 
     
-    if (input.contains("roast")) {
-       String reply = _isAuntieMode 
-           ? "Aiyo! Setapak again? 👵💢 Jam until tua (old) inside car!" 
-           : "Setapak? High traffic warning. Expect 40 mins delay daily.";
+    if (input.contains("2030") || input.contains("future") || input.contains("letter")) {
+       String reply = _isAuntieMode
+           ? "💌 **From 2030 Auntie:**\n\nAiyo boy! Luckily you listened to me and bought Cheras in 2025! Now that house value double already! MRT just downstairs, I go pasar also easy. Good choice!"
+           : "💌 **Message from 2030 You:**\n\nHey! Writing this from the future. Because you chose the Transit-Oriented home, we saved RM40,000 on car loans over 5 years. We just used that money for a Europe trip. Thank you!";
        _addTextResponse(reply);
        return;
     }
 
-    // --- 2. Firebase AI ---
+    if (input.contains("roast")) {
+       String reply = _isAuntieMode 
+           ? "Aiyo! Setapak again? 👵💢 Jam until tua (old) inside car! You want sleep in car is it?" 
+           : "Setapak? High traffic warning. Expect 40 mins delay daily. You will regret this commute.";
+       _addTextResponse(reply);
+       return;
+    }
+
     try {
       String systemInstruction = _isAuntieMode
          ? "You are a funny Malaysian Auntie housing agent. Speak Manglish. Keep it short."
@@ -306,10 +286,8 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.add({"isUser": false, "text": text});
     });
     _scrollToBottom();
-    _speak(text); // 🔥 自动朗读回复
+    _speak(text); 
   }
-
-  // --- UI 构建 ---
 
   void _addChartResponse() {
     const baseRent = 1300.0;
@@ -364,6 +342,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final bool showBackButton = widget.initialContext != null;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: const Color(0xFFEFF3F6),
@@ -398,18 +377,18 @@ class _ChatScreenState extends State<ChatScreen> {
                           Expanded(
                             child: ListView.builder(
                               controller: _scrollController,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                              padding: const EdgeInsets.only(left: 16, right: 16, top: 20, bottom: 80),
                               itemCount: _messages.length + (_isTyping ? 1 : 0),
                               itemBuilder: (context, index) {
                                 if (_isTyping && index == _messages.length) return _buildTypingIndicator();
                                 final msg = _messages[index];
                                 if (msg["chartData"] != null) {
-                                  return _buildChartBubble(text: msg["text"], data: (msg["chartData"] as List).cast<double>());
+                                  return _buildChartBubble(text: msg["text"], data: (msg["chartData"] as List).cast<double>(), screenWidth: screenWidth);
                                 }
                                 if (msg["propertyCard"] != null) {
-                                  return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_buildMessageBubble(isUser: false, text: msg["text"]), _buildPropertyCardBubble(msg["propertyCard"])]);
+                                  return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_buildMessageBubble(isUser: false, text: msg["text"], screenWidth: screenWidth), _buildPropertyCardBubble(msg["propertyCard"])]);
                                 }
-                                return _buildMessageBubble(isUser: msg["isUser"] ?? false, text: msg["text"] ?? "");
+                                return _buildMessageBubble(isUser: msg["isUser"] ?? false, text: msg["text"] ?? "", screenWidth: screenWidth);
                               },
                             ),
                           ),
@@ -454,16 +433,56 @@ class _ChatScreenState extends State<ChatScreen> {
     return Container(
       decoration: BoxDecoration(color: Colors.white, borderRadius: const BorderRadius.vertical(top: Radius.circular(30)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))]), 
       padding: const EdgeInsets.all(16), 
-      child: Column(children: [_buildSuggestionChips(), const SizedBox(height: 10), _buildInputArea()])
+      child: Column(children: [
+        // 🔥 重点：这里就是你想要的“Sliding Bar” (滚动条)！
+        _buildSuggestionChips(), 
+        const SizedBox(height: 10), 
+        _buildInputArea()
+      ])
     );
   }
 
+  // 🔥🔥🔥 核心修改：加了 Scrollbar 和防止文字截断 🔥🔥🔥
   Widget _buildSuggestionChips() {
-    final suggestions = ["⚔️ Cheras vs Setapak", "📈 Rental Growth", "🔥 Roast Setapak"];
-    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: suggestions.map((s) {
-       final isRoast = s.contains("Roast");
-       return Padding(padding: const EdgeInsets.only(right: 8), child: ActionChip(label: Text(s, style: TextStyle(color: isRoast ? Colors.red[800] : Colors.teal[800], fontWeight: FontWeight.w600, fontSize: 12)), backgroundColor: isRoast ? Colors.red[50] : Colors.teal[50], side: BorderSide(color: isRoast ? Colors.red.withOpacity(0.3) : Colors.teal.withOpacity(0.2)), avatar: Icon(isRoast ? Icons.local_fire_department : Icons.flash_on, size: 16, color: isRoast ? Colors.red : Colors.teal), onPressed: () => _sendMessage(s)));
-    }).toList()));
+    final suggestions = ["⚔️ Cheras vs Setapak", "📩 Message from 2030", "📈 Rental Growth", "🔥 Roast Setapak"];
+    
+    // 使用 Scrollbar 包裹 SingleChildScrollView，并强制显示 thumb (滑块)
+    return Scrollbar(
+      controller: _chipsScrollController,
+      thumbVisibility: true, // 让滚动条一直显示，用户就知道能滑了！
+      trackVisibility: true,
+      thickness: 6.0,
+      radius: const Radius.circular(10),
+      child: SingleChildScrollView(
+        controller: _chipsScrollController,
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(bottom: 12), // 给滚动条留点空间
+        child: Row(
+          children: suggestions.map((s) {
+             final isRoast = s.contains("Roast");
+             final isLetter = s.contains("Message");
+
+             return Padding(
+               padding: const EdgeInsets.only(right: 8), 
+               child: ActionChip(
+                 // 强制文字不换行，且不显示省略号，完全展示
+                 label: Text(s, style: TextStyle(
+                   color: isRoast ? Colors.red[800] : (isLetter ? Colors.indigo[800] : Colors.teal[800]), 
+                   fontWeight: FontWeight.w600, fontSize: 12),
+                   overflow: TextOverflow.visible, // 允许文字完全显示
+                   softWrap: false,
+                 ), 
+                 backgroundColor: isRoast ? Colors.red[50] : (isLetter ? Colors.indigo[50] : Colors.teal[50]), 
+                 side: BorderSide(color: isRoast ? Colors.red.withOpacity(0.3) : (isLetter ? Colors.indigo.withOpacity(0.3) : Colors.teal.withOpacity(0.2))), 
+                 avatar: Icon(
+                   isRoast ? Icons.local_fire_department : (isLetter ? Icons.mark_email_unread_outlined : Icons.flash_on),
+                   size: 16, 
+                   color: isRoast ? Colors.red : (isLetter ? Colors.indigo : Colors.teal)), 
+                 onPressed: () => _sendMessage(s)));
+          }).toList()
+        ),
+      ),
+    );
   }
 
   Widget _buildInputArea() {
@@ -479,8 +498,14 @@ class _ChatScreenState extends State<ChatScreen> {
     ]);
   }
 
-  Widget _buildMessageBubble({required bool isUser, required String text}) {
-    return Align(alignment: isUser ? Alignment.centerRight : Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15), constraints: const BoxConstraints(maxWidth: 320), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15), decoration: BoxDecoration(gradient: isUser ? const LinearGradient(colors: [Color(0xFF009688), Color(0xFF4DB6AC)]) : null, color: isUser ? null : Colors.white, borderRadius: BorderRadius.only(topLeft: const Radius.circular(20), topRight: const Radius.circular(20), bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(5), bottomRight: isUser ? const Radius.circular(5) : const Radius.circular(20)), boxShadow: [isUser ? BoxShadow(color: Colors.teal.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)) : BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 5, offset: const Offset(0, 2))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [if (!isUser) Padding(padding: const EdgeInsets.only(bottom: 5), child: Text(_isAuntieMode ? "AUNTIE SAYS" : "AI ANALYSIS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.teal[800], letterSpacing: 1))), Text(text, style: TextStyle(color: isUser ? Colors.white : Colors.black87, fontSize: 15, height: 1.5))])));
+  Widget _buildMessageBubble({required bool isUser, required String text, required double screenWidth}) {
+    final maxBubbleWidth = screenWidth * 0.75;
+    return Align(alignment: isUser ? Alignment.centerRight : Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15), 
+      constraints: BoxConstraints(maxWidth: maxBubbleWidth), 
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15), decoration: BoxDecoration(gradient: isUser ? const LinearGradient(colors: [Color(0xFF009688), Color(0xFF4DB6AC)]) : null, color: isUser ? null : Colors.white, borderRadius: BorderRadius.only(topLeft: const Radius.circular(20), topRight: const Radius.circular(20), bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(5), bottomRight: isUser ? const Radius.circular(5) : const Radius.circular(20)), boxShadow: [isUser ? BoxShadow(color: Colors.teal.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)) : BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 5, offset: const Offset(0, 2))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (!isUser) Padding(padding: const EdgeInsets.only(bottom: 5), child: Text(_isAuntieMode ? "AUNTIE SAYS" : "AI ANALYSIS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.teal[800], letterSpacing: 1))), 
+        SelectableText(text, style: TextStyle(color: isUser ? Colors.white : Colors.black87, fontSize: 15, height: 1.5))
+      ])));
   }
 
   Widget _buildContextInfoCard(Map<String, dynamic> ctx) {
@@ -492,11 +517,13 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildPropertyCardBubble(Map<String, dynamic> data) {
-    return Align(alignment: Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15, left: 4, right: 20), width: 280, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.teal.withOpacity(0.15)), boxShadow: [BoxShadow(color: Colors.teal.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 6))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(15)), child: Image.network(data['image'], height: 140, width: double.infinity, fit: BoxFit.cover, errorBuilder: (ctx, _, __) => Container(height: 140, color: Colors.grey[200], child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey))))), Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(data['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), const SizedBox(height: 4), Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(data['price'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal, fontSize: 15)), Text(data['location'], style: TextStyle(color: Colors.grey[600], fontSize: 12))]), const SizedBox(height: 10), Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(6)), child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.eco, size: 14, color: Colors.green), const SizedBox(width: 4), Text("Eco-Score: ${data['score']}", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green[800]))])), const SizedBox(height: 12), SizedBox(width: double.infinity, height: 36, child: ElevatedButton(onPressed: () { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Navigating to Map Details..."))); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0), child: const Text("View Details")))]))])));
+    return Align(alignment: Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15, left: 4, right: 20), width: 300, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.teal.withOpacity(0.15)), boxShadow: [BoxShadow(color: Colors.teal.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 6))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(15)), child: Image.network(data['image'], height: 160, width: double.infinity, fit: BoxFit.cover, errorBuilder: (ctx, _, __) => Container(height: 140, color: Colors.grey[200], child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey))))), Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(data['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), const SizedBox(height: 4), Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(data['price'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal, fontSize: 15)), Text(data['location'], style: TextStyle(color: Colors.grey[600], fontSize: 12))]), const SizedBox(height: 10), Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(6)), child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.eco, size: 14, color: Colors.green), const SizedBox(width: 4), Text("Eco-Score: ${data['score']}", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green[800]))])), const SizedBox(height: 12), SizedBox(width: double.infinity, height: 36, child: ElevatedButton(onPressed: () { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Navigating to Map Details..."))); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0), child: const Text("View Details")))]))])));
   }
 
-  Widget _buildChartBubble({required String text, required List<double> data}) {
-    return Align(alignment: Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15), padding: const EdgeInsets.all(16), constraints: const BoxConstraints(maxWidth: 360), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.12), blurRadius: 8, offset: const Offset(0, 3))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text("RENTAL PROJECTION", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.teal, letterSpacing: 1.1)), const SizedBox(height: 6), Text(text, style: const TextStyle(fontSize: 13, color: Colors.black87, height: 1.3)), const SizedBox(height: 10), SizedBox(height: 150, child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, crossAxisAlignment: CrossAxisAlignment.end, children: List.generate(data.length, (index) { final value = data[index]; final maxValue = data.reduce(math.max); final factor = maxValue == 0 ? 0.0 : value / maxValue; return Column(mainAxisAlignment: MainAxisAlignment.end, children: [Container(width: 18, height: 100 * factor, decoration: BoxDecoration(borderRadius: BorderRadius.circular(6), gradient: const LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xFF2E7D32), Color(0xFF81C784)])),), const SizedBox(height: 6), Text("Y${index + 1}", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)), Text("RM${value.toStringAsFixed(0)}", style: const TextStyle(fontSize: 10, color: Colors.black54))]); }))) ])));
+  Widget _buildChartBubble({required String text, required List<double> data, required double screenWidth}) {
+    return Align(alignment: Alignment.centerLeft, child: Container(margin: const EdgeInsets.only(bottom: 15), padding: const EdgeInsets.all(16), 
+      constraints: BoxConstraints(maxWidth: screenWidth * 0.8), 
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.12), blurRadius: 8, offset: const Offset(0, 3))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text("RENTAL PROJECTION", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.teal, letterSpacing: 1.1)), const SizedBox(height: 6), Text(text, style: const TextStyle(fontSize: 13, color: Colors.black87, height: 1.3)), const SizedBox(height: 10), SizedBox(height: 150, child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, crossAxisAlignment: CrossAxisAlignment.end, children: List.generate(data.length, (index) { final value = data[index]; final maxValue = data.reduce(math.max); final factor = maxValue == 0 ? 0.0 : value / maxValue; return Column(mainAxisAlignment: MainAxisAlignment.end, children: [Container(width: 18, height: 100 * factor, decoration: BoxDecoration(borderRadius: BorderRadius.circular(6), gradient: const LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xFF2E7D32), Color(0xFF81C784)])),), const SizedBox(height: 6), Text("Y${index + 1}", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)), Text("RM${value.toStringAsFixed(0)}", style: const TextStyle(fontSize: 10, color: Colors.black54))]); }))) ])));
   }
 
   Widget _buildTypingIndicator() {

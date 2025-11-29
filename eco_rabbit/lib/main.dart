@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_core/firebase_core.dart'; // 🔥 新增：Firebase 核心包
-import 'firebase_options.dart'; // 🔥 新增：Firebase 配置文件 (由 CLI 生成)
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 // 你的其他页面 Imports
 import 'home_screen.dart';
@@ -10,12 +10,9 @@ import 'chat_screen.dart';
 import 'result_display_screen.dart';
 import 'information_house_screen.dart';
 
-// ========== 修改后的 Main 函数 ==========
-void main() async { // 🔥 1. 变成异步函数
-  // 🔥 2. 确保 Flutter 绑定初始化
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 3. 初始化 Firebase (自动适配 Web/Android/iOS)
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -34,15 +31,14 @@ class EcoRabbitWeb extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF5F7FA), // 浅灰背景，适合 Web
+        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
       ),
-      // 👇 入口保持为 WelcomeScreen
       home: const WelcomeScreen(),
     );
   }
 }
 
-// ========== 1. WELCOME PAGE (兔子动画 - 保持不变) ==========
+// ========== 1. WELCOME PAGE (保持不变) ==========
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
@@ -81,15 +77,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       curve: Curves.easeIn,
     ));
 
-    // Start the animation
     _controller.forward();
 
-    // After 2 seconds, go to loading page
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const LoadingScreen(), // 去 Loading 页
+            builder: (context) => const LoadingScreen(),
           ),
         );
       }
@@ -127,7 +121,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Animated Rabbit Image
                 AnimatedBuilder(
                   animation: _controller,
                   builder: (context, child) {
@@ -150,7 +143,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             ],
                           ),
                           child: ClipOval(
-                            // ⚠️ 注意：如果没有 assets/rabbit.png，它会显示备用的图标
                             child: Image.asset(
                               'assets/rabbit.png',
                               fit: BoxFit.cover,
@@ -158,7 +150,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 return Container(
                                   color: Colors.grey[200],
                                   child: Icon(
-                                    Icons.pets, // 备用兔子图标
+                                    Icons.pets,
                                     size: isDesktop ? 60 : 40,
                                     color: Colors.grey,
                                   ),
@@ -174,7 +166,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
                 SizedBox(height: isDesktop ? 60 : 40),
 
-                // Welcome Text with fade animation
                 AnimatedBuilder(
                   animation: _controller,
                   builder: (context, child) {
@@ -227,40 +218,28 @@ class _LoadingScreenState extends State<LoadingScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Show carrots one by one with delays
     _showCarrotsSequentially();
   }
 
   void _showCarrotsSequentially() {
-    // Show first carrot after 0.5 seconds
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        setState(() {
-          _carrotCount = 1;
-        });
+        setState(() { _carrotCount = 1; });
       }
     });
 
-    // Show second carrot after 1 second
     Future.delayed(const Duration(milliseconds: 1000), () {
       if (mounted) {
-        setState(() {
-          _carrotCount = 2;
-        });
+        setState(() { _carrotCount = 2; });
       }
     });
 
-    // Show third carrot after 1.5 seconds
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) {
-        setState(() {
-          _carrotCount = 3;
-        });
+        setState(() { _carrotCount = 3; });
       }
     });
 
-    // After 3 seconds total, go to main page
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -285,17 +264,13 @@ class _LoadingScreenState extends State<LoadingScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFE8F5E9),
-              Color(0xFFC8E6C9),
-            ],
+            colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
           ),
         ),
         child: SafeArea(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Rabbit Image
               Container(
                 width: isDesktop ? 120 : 80,
                 height: isDesktop ? 120 : 80,
@@ -317,11 +292,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
                         color: Colors.grey[200],
-                        child: Icon(
-                          Icons.pets,
-                          size: isDesktop ? 40 : 30,
-                          color: Colors.grey,
-                        ),
+                        child: Icon(Icons.pets, size: isDesktop ? 40 : 30, color: Colors.grey),
                       );
                     },
                   ),
@@ -330,7 +301,6 @@ class _LoadingScreenState extends State<LoadingScreen> {
 
               const SizedBox(height: 40),
 
-              // Loading Text
               Text(
                 'Preparing Your EcoRabbit Experience',
                 style: GoogleFonts.caveat(
@@ -343,7 +313,6 @@ class _LoadingScreenState extends State<LoadingScreen> {
 
               const SizedBox(height: 30),
 
-              // Animated Circular Progress Indicator
               SizedBox(
                 width: isDesktop ? 200 : 150,
                 child: LinearProgressIndicator(
@@ -356,66 +325,16 @@ class _LoadingScreenState extends State<LoadingScreen> {
 
               const SizedBox(height: 20),
 
-              // Loading Message with animated carrots
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                 const Text(
-                    'Loading',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF388E3C),
-                    ),
-                  ),
-                  Text(
-                    '.', // First dot
-                   style: GoogleFonts.caveat(
-                      fontSize: 16,
-                      color: const Color(0xFF388E3C),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    '.', // Second dot
-                    style: GoogleFonts.caveat(
-                      fontSize: 16,
-                      color: const Color(0xFF388E3C),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    '.', // Third dot
-                   style: GoogleFonts.caveat(
-                      fontSize: 16,
-                      color: const Color(0xFF388E3C),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  // Carrots that appear one by one
-                  if (_carrotCount >= 1)
-                    Text(
-                      ' 🥕',
-                    style: GoogleFonts.caveat(
-                        fontSize: 16,
-                        color: const Color(0xFF388E3C),
-                      ),
-                    ),
-                  if (_carrotCount >= 2)
-                    Text(
-                      '🥕',
-                      style: GoogleFonts.caveat(
-                        fontSize: 16,
-                        color: const Color(0xFF388E3C),
-                      ),
-                    ),
-                  if (_carrotCount >= 3)
-                    Text(
-                      '🥕',
-                      style: GoogleFonts.caveat(
-                        fontSize: 16,
-                        color: const Color(0xFF388E3C),
-                      ),
-                    ),
+                  const Text('Loading', style: TextStyle(fontSize: 16, color: Color(0xFF388E3C))),
+                  Text('.', style: GoogleFonts.caveat(fontSize: 16, color: const Color(0xFF388E3C), fontWeight: FontWeight.bold)),
+                  Text('.', style: GoogleFonts.caveat(fontSize: 16, color: const Color(0xFF388E3C), fontWeight: FontWeight.bold)),
+                  Text('.', style: GoogleFonts.caveat(fontSize: 16, color: const Color(0xFF388E3C), fontWeight: FontWeight.bold)),
+                  if (_carrotCount >= 1) Text(' 🥕', style: GoogleFonts.caveat(fontSize: 16, color: const Color(0xFF388E3C))),
+                  if (_carrotCount >= 2) Text('🥕', style: GoogleFonts.caveat(fontSize: 16, color: const Color(0xFF388E3C))),
+                  if (_carrotCount >= 3) Text('🥕', style: GoogleFonts.caveat(fontSize: 16, color: const Color(0xFF388E3C))),
                 ],
               ),
             ],
@@ -426,7 +345,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
   }
 }
 
-// ========== 3. MAIN DASHBOARD (保持不变) ==========
+// ========== 3. MAIN DASHBOARD (已修改 Leading Logo) ==========
 class MainDashboardScaffold extends StatefulWidget {
   const MainDashboardScaffold({super.key});
 
@@ -445,9 +364,8 @@ class _MainDashboardScaffoldState extends State<MainDashboardScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    // 获取屏幕宽度
     final width = MediaQuery.of(context).size.width;
-    final isDesktop = width > 800; // 如果宽度大于 800，就认为是电脑/iPad横屏
+    final isDesktop = width > 800;
 
     return Scaffold(
       body: Row(
@@ -460,9 +378,34 @@ class _MainDashboardScaffoldState extends State<MainDashboardScaffold> {
                 setState(() => _currentIndex = index);
               },
               labelType: NavigationRailLabelType.all,
-              leading: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Icon(Icons.eco, color: Colors.teal, size: 40), // Logo
+              // 🔥🔥🔥 这里改了！换成了兔子图片 🔥🔥🔥
+              leading: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.teal.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/rabbit.png', // ✅ 兔子上位！
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        // 备用方案：如果图片加载失败，显示原来的 Eco Icon
+                        return const Icon(Icons.eco, color: Colors.teal, size: 30);
+                      },
+                    ),
+                  ),
+                ),
               ),
               destinations: const [
                 NavigationRailDestination(
@@ -483,13 +426,10 @@ class _MainDashboardScaffoldState extends State<MainDashboardScaffold> {
               ],
             ),
 
-          // --- 垂直分割线 (仅 Web) ---
           if (isDesktop) const VerticalDivider(thickness: 1, width: 1),
 
-          // --- 主要内容区域 ---
           Expanded(
             child: Center(
-              // 限制最大宽度，防止内容在宽屏上被拉得太长
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1000), 
                 child: _pages[_currentIndex],
@@ -501,7 +441,7 @@ class _MainDashboardScaffoldState extends State<MainDashboardScaffold> {
 
       // --- 手机版专用：底部导航栏 ---
       bottomNavigationBar: isDesktop
-          ? null // 如果是电脑，就不显示底部栏
+          ? null 
           : NavigationBar(
               selectedIndex: _currentIndex,
               onDestinationSelected: (int index) {
