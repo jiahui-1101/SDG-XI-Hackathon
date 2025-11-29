@@ -151,9 +151,12 @@ Used for: **Road network modeling**, **travel-time predictions**, **Traffic Stre
 
 ## 🌍 **SDG Impact — SDG 11: Sustainable Cities & Communities**
 
-* **11.2:** Promotes public transport by reducing car dependency
-* **11.1:** Supports affordable housing access for B40/M40
-* **Environmental:** Lowers CO₂ emissions through TOD lifestyle
+* We are committed to building **Sustainable Cities & Communities** through a four-pronged approach:
+
+* **🏠 Affordable Housing (SDG 11.1):** AI-driven matching to help B40/M40 demographics find affordable homes within their budget.
+* **🚆 Green Mobility (SDG 11.2):** promoting public transport usage to reduce car dependency and traffic congestion.
+* **📊 Smart Urbanization (SDG 11.3):** Providing data insights to bridge the gap between residents and urban planners.
+* **🍃 Environmental Health (SDG 11.6):** Lowering carbon emissions and pollution through the promotion of a Transit-Oriented Development (TOD) lifestyle.
 
 ---
 
