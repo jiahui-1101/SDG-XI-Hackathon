@@ -151,7 +151,7 @@ Used for: **Road network modeling**, **travel-time predictions**, **Traffic Stre
 
 ## 🌍 **SDG Impact — SDG 11: Sustainable Cities & Communities**
 
-* We are committed to building **Sustainable Cities & Communities** through a four-pronged approach:
+We are committed to building **Sustainable Cities & Communities** through a four-pronged approach:
 
 * **🏠 Affordable Housing (SDG 11.1):** AI-driven matching to help B40/M40 demographics find affordable homes within their budget.
 * **🚆 Green Mobility (SDG 11.2):** promoting public transport usage to reduce car dependency and traffic congestion.
