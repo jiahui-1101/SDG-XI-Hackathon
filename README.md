@@ -88,8 +88,6 @@ Classic wisdom:
 
 > *“Aiyo this area jam until cannot move. You sure want to stay here?”*
 
----
-
 ### 📈 **Rental Growth Prediction Graph**
 
 Visualize **5-year rental yield** and **property value growth** using historical + urban planning data.
@@ -177,7 +175,6 @@ Used for: **Road network modeling**, **travel-time predictions**, **Traffic Stre
 * Flutter SDK
 * VS Code / Android Studio
 * Firebase Config
-* Google Maps API Key
 * Gemini API Key
 
 ### **Steps**
