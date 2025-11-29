@@ -168,27 +168,56 @@ Used for: **Road network modeling**, **travel-time predictions**, **Traffic Stre
 
 ---
 
-## ⚙️ **Installation & Run (Flutter)**
+## ⚙️ Installation & Run
 
-### **Requirements**
+### 1\. Prerequisites
 
-* Flutter SDK
-* VS Code / Android Studio
-* Firebase Config
-* Gemini API Key
+Ensure you have the following installed:
 
-### **Steps**
+  * **Flutter SDK** (Latest Stable)
+  * **Node.js** (Required for Firebase CLI)
+  * **Firebase CLI** (`npm install -g firebase-tools`)
+  * **VS Code** (Recommended) with Flutter extension
+
+### 2\. Clone & Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/eco-rabbit.git
+git clone https://github.com/your-username/ecohabit.git
 
 # Navigate to project directory
-cd eco-rabbit
+cd ecohabit
 
 # Install dependencies
 flutter pub get
-
-# Run the app
-flutter run
 ```
+
+### 3\. Firebase Configuration (Crucial\!)
+
+Since EcoHabit uses **Firebase AI Logic**, you must link it to your Firebase project:
+
+```bash
+# 1. Login to Firebase
+firebase login
+
+# 2. Configure FlutterFire (Select 'Web' platform)
+flutterfire configure
+```
+
+*Note: Ensure **Vertex AI API** is enabled in your Google Cloud Console for this project.*
+
+### 4\. API Keys & Assets
+
+1.  **Google Maps:** Open `web/index.html` and paste your API Key in the script tag:
+    `<script src="https://maps.googleapis.com/...key=YOUR_KEY_HERE"></script>`
+2.  **Assets:** Ensure `assets/rabbit.png` exists in the root directory for the branded experience.
+
+### 5\. Run the App (Web Mode)
+
+EcoHabit is optimized for Web. Run the following command to launch in Chrome:
+
+```bash
+flutter run -d chrome
+```
+
+-----
