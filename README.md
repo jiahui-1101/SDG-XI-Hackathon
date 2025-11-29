@@ -2,6 +2,7 @@
 
 **Fixing Traffic by Moving People, Not Cars**
 
+---
 
 ## 📌 **Overview**
 
@@ -9,6 +10,7 @@
 
 Unlike typical property apps, EcoRabbit starts with your **workplace** and **commute patterns** to reduce car dependency — directly supporting **SDG 11: Sustainable Cities & Communities**.
 
+---
 
 ## 🧩 **Why EcoRabbit Exists**
 
@@ -16,6 +18,7 @@ Unlike typical property apps, EcoRabbit starts with your **workplace** and **com
 * **Poor Transit Access:** **70%** of Klang Valley residents live **beyond walking distance** from MRT/LRT stations (KRI, 2023).
 * **Lack of Mobility Tools:** Cities lack **real-time mobility & accessibility analysis**, leading to **reactive planning** (MIP, 2024).
 
+---
 
 ## 🚀 **Key Features**
 
@@ -45,6 +48,7 @@ Your future self reacts to your housing choice.
 * **Good Choice:**
   *“2030 Me: Bought an iPhone 20 with all the petrol money we saved!”*
 
+---
 
 ### ✅ **2. Dynamic City Pulse Layers + Time-Travel**
 
@@ -66,10 +70,11 @@ affect commute quality and property value.
 
 Powered by AI models that adjust **heatmap opacity & intensity**.
 
+---
 
 ### ✅ **3. EcoRabbit Insight Agent — Your AI Urban Advisor**
 
-Powered by **Google Gemini**.
+Powered by **Google Gemini API**.
 
 #### **Standard Mode**
 
@@ -89,6 +94,7 @@ Classic wisdom:
 
 Visualize **5-year rental yield** and **property value growth** using historical + urban planning data.
 
+---
 
 ## 🛠️ **Tech Stack**
 
@@ -96,7 +102,8 @@ Visualize **5-year rental yield** and **property value growth** using historical
 * **Backend:** Python
 * **Database:** Firebase
 * **AI:** Google Gemini API
-  
+
+---
 
 ## 📊 **Datasets Used**
 
@@ -104,50 +111,45 @@ Visualize **5-year rental yield** and **property value growth** using historical
 
 Source: **data.gov.my**
 Used for: **Population density mapping**, **urban growth model**, heatmap layering.
-🔗 [https://data.gov.my/data-catalogue/population_district?state=w-p-kuala-lumpur&district=w-p-kuala-lumpur&visual=table](https://data.gov.my/data-catalogue/population_district?state=w-p-kuala-lumpur&district=w-p-kuala-lumpur&visual=table)
-
+🔗 [Link](https://data.gov.my/data-catalogue/population_district?state=w-p-kuala-lumpur&district=w-p-kuala-lumpur&visual=table)
 
 ### **2. Housing Prices Malaysia 2025 (HuggingFace)**
 
 Source: **HuggingFace Datasets**
 Used for: **Affordability scoring**, **Eco-Score**, **rental growth prediction model**.
-🔗 [https://huggingface.co/datasets/jienweng/housing-prices-malaysia-2025/viewer/default/train](https://huggingface.co/datasets/jienweng/housing-prices-malaysia-2025/viewer/default/train)
-
+🔗 [Link](https://huggingface.co/datasets/jienweng/housing-prices-malaysia-2025/viewer/default/train)
 
 ### **3. House Prices in Malaysia (2025)**
 
 Source: **Kaggle**
 Used for: **Cross-validation** of affordability heatmaps and pricing trends.
-🔗 [https://www.kaggle.com/datasets/lyhatt/house-prices-in-malaysia-2025](https://www.kaggle.com/datasets/lyhatt/house-prices-in-malaysia-2025)
-
+🔗 [Link](https://www.kaggle.com/datasets/lyhatt/house-prices-in-malaysia-2025)
 
 ### **4. KL Property Listings Overview**
 
 Source: **OpenDataBay**
 Used for: **Real property listings**, metadata, and **district-level supply insights**.
-🔗 [https://www.opendatabay.com/data/ai-ml/19a75bde-15b2-4e4c-9fb8-50753952ebd1](https://www.opendatabay.com/data/ai-ml/19a75bde-15b2-4e4c-9fb8-50753952ebd1)
-
+🔗 [Link](https://www.opendatabay.com/data/ai-ml/19a75bde-15b2-4e4c-9fb8-50753952ebd1)
 
 ### **5. Population Data — Kuala Lumpur**
 
 Source: **DOSM Kawasanku Dashboard**
 Used for: **Population density**, **demographic heatmaps**, **urban activity modeling**.
-🔗 [https://open.dosm.gov.my/dashboard/kawasanku/W.P.%20Kuala%20Lumpur](https://open.dosm.gov.my/dashboard/kawasanku/W.P.%20Kuala%20Lumpur)
-
+🔗 [Link](https://open.dosm.gov.my/dashboard/kawasanku/W.P.%20Kuala%20Lumpur)
 
 ### **6. Traffic Information for Major Cities in Malaysia**
 
 Source: **Malaysia Government Portal**
 Used for: **Real-time congestion**, **traffic stress baseline**, **trend calibration**.
-🔗 [https://www.malaysia.gov.my/portal/trafficinfo?service=38&agency=101](https://www.malaysia.gov.my/portal/trafficinfo?service=38&agency=101)
-
+🔗 [Link](https://www.malaysia.gov.my/portal/trafficinfo?service=38&agency=101)
 
 ### **7. Malaysia Road Traffic Data**
 
 Source: **xMap.ai**
 Used for: **Road network modeling**, **travel-time predictions**, **Traffic Stress Map**.
-🔗 [https://www.xmap.ai/data-catalogs/malaysia-road-traffic-data](https://www.xmap.ai/data-catalogs/malaysia-road-traffic-data)
+🔗 [Link](https://www.xmap.ai/data-catalogs/malaysia-road-traffic-data)
 
+---
 
 ## 🌍 **SDG Impact — SDG 11: Sustainable Cities & Communities**
 
@@ -155,6 +157,7 @@ Used for: **Road network modeling**, **travel-time predictions**, **Traffic Stre
 * **11.1:** Supports affordable housing access for B40/M40
 * **Environmental:** Lowers CO₂ emissions through TOD lifestyle
 
+---
 
 ## 📱 **User Flow**
 
@@ -165,6 +168,7 @@ Used for: **Road network modeling**, **travel-time predictions**, **Traffic Stre
 5. **Predict:** Rental Growth Projection
 6. **Decide:** Choose a sustainable, affordable home
 
+---
 
 ## ⚙️ **Installation & Run (Flutter)**
 
@@ -172,6 +176,8 @@ Used for: **Road network modeling**, **travel-time predictions**, **Traffic Stre
 
 * Flutter SDK
 * VS Code / Android Studio
+* Firebase Config
+* Google Maps API Key
 * Gemini API Key
 
 ### **Steps**
@@ -189,10 +195,3 @@ flutter pub get
 # Run the app
 flutter run
 ```
-
-
-If you want, I can also generate:
-✅ A shorter README
-✅ A Devpost-style description
-✅ A pitch deck version
-Just tell me!
