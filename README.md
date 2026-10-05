@@ -220,12 +220,10 @@ flutter run -d chrome
 
 ## Team Contributions
 
-| Team member | Role | Contributions evidenced in the repository | Visible non-merge commits* |
-|---|---|---|---:|
-| **Wong Jia Hui** | **Team Leader · Map/Firebase Integration Developer** | Developed the interactive map and heat-map experience, integrated Firebase, refined home/chat flows and branding, and maintained setup, dataset and SDG 11 documentation. | **17 / 27** |
-| **Lee Mei Shuet** | **Home & Conversational Experience Developer** | Built and refined the home screen, AI Top Picks/explanation flow, chat experience, loading state and core application integration. | **6 / 27** |
-| **Loh Su Ting** | **Property Discovery Developer** | Implemented property-result and housing-information screens, improved the home experience and contributed property model and chat integration. | **4 / 27** |
-
-<sub>*Counts are non-merge commits visible in the public Git history. They describe repository activity rather than ownership.</sub>
+| Team member | Role | Contributions evidenced in the repository |
+|---|---|---|
+| **Wong Jia Hui** | **Team Leader · Map/Firebase Integration Developer** | Developed the interactive map and heat-map experience, integrated Firebase, refined home/chat flows and branding, and maintained setup, dataset and SDG 11 documentation. |
+| **Lee Mei Shuet** | **Home & Conversational Experience Developer** | Built and refined the home screen, AI Top Picks/explanation flow, chat experience, loading state and core application integration. |
+| **Loh Su Ting** | **Property Discovery Developer** | Implemented property-result and housing-information screens, improved the home experience and contributed property model and chat integration. |
 
 -----
